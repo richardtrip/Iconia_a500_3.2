@@ -126,6 +126,14 @@
 #define CTS_CP14_WPT_2	592
 #define CTS_CP14_WPT_3	600
 
+/*
+ * perfmon unit context :
+ *	2 32-bit control registers
+ *	1 32-bit cycle counter
+ *	for each counter 1 32-bit event select register and 1 32-bit value
+*/
+#define CTX_PERFMON	700
+
 #include "power.h"
 #include "power-macros.S"
 
@@ -314,6 +322,26 @@ ENTRY(__cortex_a9_save)
 	mrc	p14, 0, r3, c0, c3, 7
 	stmia	r9!, {r2-r3}     	@ WPT_0
 
+	/* save CP15 perfmon context */
+	add	r9, r8, #CTX_PERFMON
+	mrc	p15, 0, r2, c9, c12, 0	@ PMCR
+	bic	r0, r2, #1		@ disable counters
+	mcr	p15, 0, r0, c9, c12, 0
+	mrc	p15, 0, r3, c9, c12, 1	@ PMCNTENSET
+	mrc	p15, 0, r4, c9, c13, 0	@ PMCCNTR
+	stmia	r9!, {r2-r4}
+	mov	r0, r0, LSR #11
+	and	r0, r0, #0x3f
+	sub	r0, r0, #1
+1:
+	mcr	p15, 0, r0, c9, c12, 5	@ PMSELR
+	mrc	p15, 0, r4, c9, c13, 1	@ PMXEVTYPER
+	mrc	p15, 0, r5, c9, c13, 2	@ PMXEVCNTR
+	stmia	r9!, {r4-r5}
+	subs	r0, r0, #1
+	bpl	1b
+
+
 #ifdef CONFIG_CACHE_L2X0
 	cpu_id	r4
 	cmp	r4, #0
@@ -498,6 +526,24 @@ ENTRY(__cortex_a9_restore)
 	isb
 	mcr	p14, 0, r0, c0, c2, 2	@ DSCR
 	isb
+
+	/* restore CP15 perfmon context */
+	add	r9, r8, #CTX_PERFMON
+	ldmia	r9!, {r2-r4}
+	mcr	p15, 0, r4, c9, c13, 0	@ PMCCNTR
+	mov	r0, r2, LSR #11
+	and	r0, r0, #0x3f
+	sub	r0, r0, #1
+1:
+	ldmia	r9!, {r4-r5}
+	mcr	p15, 0, r0, c9, c12, 5	@ PMSELR
+	mcr	p15, 0, r4, c9, c13, 1	@ PMXEVTYPER
+	mcr	p15, 0, r5, c9, c13, 2	@ PMXEVCNTR
+	subs	r0, r0, #1
+	bpl	1b
+
+	mcr	p15, 0, r3, c9, c12, 1	@ PMCNTENSET
+	mcr	p15, 0, r2, c9, c12, 0	@ PMCR
 
 #ifdef CONFIG_VFPv3
 	orr	r4, lr, #0xF00000
