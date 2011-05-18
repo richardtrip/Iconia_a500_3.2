@@ -1369,9 +1369,6 @@ static bool _tegra_dc_controller_enable(struct tegra_dc *dc)
 		dc->out->enable();
 
 	tegra_dc_setup_clk(dc, dc->clk);
-#if !defined(CONFIG_MACH_ACER_PICASSO) && !defined(CONFIG_MACH_ACER_MAYA)
-	tegra_periph_reset_assert(dc->clk);
-#endif
 	clk_enable(dc->clk);
 	clk_enable(dc->emc_clk);
 #if !defined(CONFIG_MACH_ACER_PICASSO) && !defined(CONFIG_MACH_ACER_MAYA)
