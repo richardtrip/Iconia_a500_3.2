@@ -223,8 +223,9 @@ struct tegra_dc_out {
 	unsigned		h_size;
 	unsigned		v_size;
 
-	int			dcc_bus;
-	int			hotplug_gpio;
+	int				dcc_bus;
+	int				hotplug_gpio;
+	const char			*parent_clk;
 
 	unsigned		max_pixclock;
 	unsigned		order;
