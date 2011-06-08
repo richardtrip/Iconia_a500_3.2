@@ -28,6 +28,7 @@
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
 #include <linux/wait.h>
+#include <linux/slab.h>
 
 #include <asm/pgtable.h>
 #include <asm/tlbflush.h>
