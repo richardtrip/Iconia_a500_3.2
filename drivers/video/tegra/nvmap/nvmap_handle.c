@@ -378,7 +378,7 @@ void nvmap_free_handle_id(struct nvmap_client *client, unsigned long id)
 	pins = atomic_read(&ref->pin);
 	rb_erase(&ref->node, &client->handle_refs);
 
-	if (h->alloc && h->heap_pgalloc && !h->pgalloc.contig)
+	if (h->alloc && h->heap_pgalloc && !h->pgalloc.contig && !client->super)
 		atomic_sub(h->size, &client->iovm_commit);
 
 	if (h->alloc && !h->heap_pgalloc) {
