@@ -159,3 +159,21 @@ config TEGRA_MC_PROFILE
 	  When enabled, provides a mechanism to perform statistical
 	  sampling of the memory controller usage on a client-by-client
 	  basis, and report the log through sysfs.
+
+config TEGRA_CPU_FREQ_SET_MIN_MAX
+        bool "Set Min/Max CPU frequencies."
+depends on CPU_FREQ
+        default n
+        help
+          Allow setting min and max CPU frequencies. Sysfs can be used
+          to override these values.
+
+config TEGRA_CPU_FREQ_MAX
+        int "Max CPU Frequency"
+        depends on TEGRA_CPU_FREQ_SET_MIN_MAX
+        default 1000000
+
+config TEGRA_CPU_FREQ_MIN
+        int "Min CPU Frequency"
+        depends on TEGRA_CPU_FREQ_SET_MIN_MAX
+        default 216000
