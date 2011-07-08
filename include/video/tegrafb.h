@@ -45,12 +45,9 @@
 #define TEGRA_FB_WIN_FMT_YCbCr422RA	24
 #define TEGRA_FB_WIN_FMT_YUV422RA	25
 
-#define TEGRA_FB_WIN_BLEND_NONE		0
-#define TEGRA_FB_WIN_BLEND_PREMULT	1
-#define TEGRA_FB_WIN_BLEND_COVERAGE	2
-
-#define TEGRA_FB_WIN_FLAG_INVERT_H	(1 << 0)
-#define TEGRA_FB_WIN_FLAG_INVERT_V	(1 << 1)
+#define TEGRA_FB_WIN_BLEND_NONE	0
+#define TEGRA_FB_WIN_BLEND_PREMULT 1
+#define TEGRA_FB_WIN_BLEND_COVERAGE 2
 
 #define TEGRA_FB_WIN_LAYOUT_LINEAR 0
 #define TEGRA_FB_WIN_LAYOUT_TILED 1
@@ -59,7 +56,6 @@
 struct tegra_fb_windowattr {
 	__s32	index;
 	__u32	buff_id;
-	__u32	flags;
 	__u32	blend;
 	__u32	layout;
 	__u32	offset;
