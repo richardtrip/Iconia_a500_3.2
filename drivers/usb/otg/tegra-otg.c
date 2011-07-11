@@ -412,7 +412,7 @@ static int tegra_otg_resume(struct platform_device * pdev)
 		spin_unlock_irqrestore(&tegra_otg->lock, flags);
 	}
 
-	return;
+	return 0;
 }
 #endif
 
