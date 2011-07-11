@@ -228,6 +228,7 @@ static struct tegra_suspend_platform_data ventana_suspend_data = {
 	.wake_high	= TEGRA_WAKE_GPIO_PC7,
 	.wake_low	= TEGRA_WAKE_GPIO_PV2,
 	.wake_any	= TEGRA_WAKE_GPIO_PV3 | TEGRA_WAKE_USB1_VBUS | TEGRA_WAKE_GPIO_PS0,
+	.cpu_lp2_min_residency = 2000,
 };
 
 int __init ventana_regulator_init(void)
