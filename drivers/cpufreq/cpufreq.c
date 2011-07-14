@@ -44,18 +44,18 @@
 #define CPUMVMAX 1400
 #define CPUMVMIN 770
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpufrequency[FREQCOUNT]  = { 216000, 312000, 456000, 608000, 750000, 760000, 816000, 912000, 1000000, 1200000, 1400000 };
+int cpufrequency[FREQCOUNT]  = { 1400000, 1200000, 1000000, 912000, 816000, 760000, 750000, 608000, 456000, 312000, 216000 };
 #else
-int cpufrequency[FREQCOUNT]  = { 216000, 312000, 456000, 608000, 750000, 760000, 816000, 912000, 1000000, 1200000 };
+int cpufrequency[FREQCOUNT]  = { 1200000, 1000000, 912000, 816000, 760000, 750000, 608000, 456000, 312000, 216000 };
 #endif
 
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpuvoltage[FREQCOUNT] = {750, 775, 800, 825, 850, 875, 950, 975, 975, 1025, 1075, 1125, 1175, 1200, 1225};
+int cpuvoltage[FREQCOUNT] = { 1250, 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770 };
 #else
-int cpuvoltage[FREQCOUNT] = {750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000, 1025, 1050, 1100, 1125};
+int cpuvoltage[FREQCOUNT] = { 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770 };
 #endif
 
-int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
