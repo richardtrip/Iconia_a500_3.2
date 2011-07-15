@@ -591,6 +591,9 @@ static bool tegra_dc_hdmi_mode_filter(const struct tegra_dc *dc,
 	int i;
 	int clock_per_frame;
 
+	if (!mode->pixclock)
+		return false;
+
 	for (i = 0; i < ARRAY_SIZE(tegra_dc_hdmi_supported_modes); i++) {
 		if (tegra_dc_hdmi_mode_equal(&tegra_dc_hdmi_supported_modes[i], mode) &&
 			tegra_dc_hdmi_valid_pixclock(dc, &tegra_dc_hdmi_supported_modes[i])) {
