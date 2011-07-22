@@ -960,7 +960,7 @@ continue_unlock:
 					goto continue_unlock;
 			}
 
-			BUG_ON(PageWriteback(page));
+			//BUG_ON(PageWriteback(page));
 			if (!clear_page_dirty_for_io(page))
 				goto continue_unlock;
 
