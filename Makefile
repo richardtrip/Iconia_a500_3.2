@@ -342,8 +342,10 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 CFLAGS_MODULE   = -Wno-array-bounds -mtune=cortex-a9 -mfpu=vfpv3-d16
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -mtune=cortex-a9 -mfpu=vfpv3-d16
-AFLAGS_KERNEL	=
+// CFLAGS_KERNEL	= -mtune=cortex-a9 -mfpu=vfpv3-d16
+// AFLAGS_KERNEL	=
+CFLAGS_KERNEL  = -O2 -mtune=cortex-a9 -ftree-vectorize -ffast-math -fsingle-precision-constant
+AFLAGS_KERNEL  = -O2 -mtune=cortex-a9 -ftree-vectorize -ffast-math -fsingle-precision-constant
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 
