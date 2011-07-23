@@ -36,7 +36,7 @@
 
 /* Initial implementation of userspace voltage control */
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-#define FREQCOUNT 11
+#define FREQCOUNT 12
 #else
 #define FREQCOUNT 10
 #endif
@@ -50,12 +50,12 @@ int cpufrequency[FREQCOUNT]  = { 1200000, 1000000, 912000, 816000, 760000, 75000
 #endif
 
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpuvoltage[FREQCOUNT] = { 1250, 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770 };
+int cpuvoltage[FREQCOUNT] = { 1250, 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770, 770 };
 #else
 int cpuvoltage[FREQCOUNT] = { 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770 };
 #endif
 
-int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
