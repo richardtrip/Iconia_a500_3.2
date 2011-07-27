@@ -384,15 +384,12 @@ config TINY_RCU
 endchoice
 
 config JRCU_DAEMON
-	bool "Drive JRCU from a daemon"
+	bool
 	depends on JRCU
-	default Y
+	default y
 	help
-	  Normally JRCU end-of-batch processing is driven from a SoftIRQ
-	  'interrupt' driver.  If you consider this to be too invasive,
-	  this option can be used to drive JRCU from a kernel daemon.
-
-	  If unsure, say Y here.
+	  Required. The context switch when leaving the daemon is needed
+	  to get the CPU to reliably participate in end-of-batch processing.
 
 config RCU_TRACE
 	bool "Enable tracing for RCU"

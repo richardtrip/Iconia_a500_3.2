@@ -9,26 +9,13 @@
 #include <linux/thread_info.h>
 #include <linux/linkage.h>
 #include <linux/list.h>
-# define __add_preempt_count(val) do { preempt_count() += (val); } while (0)
-
-#ifndef CONFIG_JRCU
-# define __sub_preempt_count(val) do { preempt_count() -= (val); } while (0)
-#else
-	extern void __rcu_preempt_sub(void);
-# define __sub_preempt_count(val) do { \
-	if (!(preempt_count() -= (val))) { \
-		/* preempt is enabled, RCU OK with consequent stale result */ \
-		__rcu_preempt_sub(); \
-	} \
-} while (0)
-#endif
 
 #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
   extern void add_preempt_count(int val);
   extern void sub_preempt_count(int val);
 #else
-# define add_preempt_count(val)	__add_preempt_count(val)
-# define sub_preempt_count(val)	__sub_preempt_count(val)
+# define add_preempt_count(val)	do { preempt_count() += (val); } while (0)
+# define sub_preempt_count(val)	do { preempt_count() -= (val); } while (0)
 #endif
 
 #define inc_preempt_count() add_preempt_count(1)

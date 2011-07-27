@@ -158,12 +158,6 @@ void rcu_note_context_switch(int cpu)
  rcu_eob(cpu);
 }
 
-void __rcu_preempt_sub(void)
-{
- rcu_eob(rcu_cpu());
-}
-EXPORT_SYMBOL(__rcu_preempt_sub);
-
 void rcu_barrier(void)
 {
  struct rcu_synchronize rcu;
