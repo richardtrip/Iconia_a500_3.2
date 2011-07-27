@@ -499,14 +499,34 @@ void __init rcu_scheduler_starting(void)
 #include <linux/err.h>
 #include <linux/param.h>
 #include <linux/kthread.h>
+static int rcu_priority;
+static struct task_struct *rcu_daemon;
+
+static int jrcu_set_priority(int priority)
+{
+	struct sched_param param;
+
+	if (priority == 0) {
+		set_user_nice(current, -19);
+		return 0;
+	}
+
+	if (priority < 0)
+		param.sched_priority = MAX_USER_RT_PRIO + priority;
+	else
+		param.sched_priority = priority;
+
+	sched_setscheduler_nocheck(current, SCHED_RR, &param);
+	return param.sched_priority;
+}
 
 static int jrcud_func(void *arg)
 {
- set_user_nice(current, -19);
  current->flags |= PF_NOFREEZE;
 
- pr_info("JRCU: daemon started. Will operate at ~%d Hz.\n", RCU_HZ);
+ rcu_priority = jrcu_set_priority(CONFIG_JRCU_DAEMON_PRIO);
  rcu_timer_stop();
+ pr_info("JRCU: daemon started. Will operate at ~%d Hz.\n", rcu_hz);
 
  while (!kthread_should_stop()) {
  usleep_range(rcu_hz_period_us, rcu_hz_period_us + rcu_hz_delta_us);
@@ -514,6 +534,7 @@ static int jrcud_func(void *arg)
  }
 
  pr_info("JRCU: daemon exiting\n");
+ rcu_daemon = NULL;
  rcu_timer_restart();
  return 0;
 }
@@ -527,6 +548,7 @@ static __init int jrcud_start(void)
  pr_warn("JRCU: daemon not started\n");
  return -ENODEV;
  }
+ rcu_daemon = p;
  return 0;
 }
 late_initcall(jrcud_start);
@@ -547,8 +569,13 @@ static int rcu_debugfs_show(struct seq_file *m, void *unused)
  raw_local_irq_disable();
  msecs = div_s64(sched_clock() - rcu_timestamp, NSEC_PER_MSEC);
  raw_local_irq_enable();
- seq_printf(m, "%14u: hz\n",
-	rcu_hz);
+ seq_printf(m, "%14u: hz\n", rcu_hz);
+#ifdef CONFIG_JRCU_DAEMON
+	if (rcu_daemon)
+		seq_printf(m, "%14u: daemon priority\n", rcu_priority);
+	else
+		seq_printf(m, "%14s: daemon priority\n", "none, no daemon");
+#endif
  seq_printf(m, "%14u: #passes seen\n",
 	rcu_stats.npasses);
 

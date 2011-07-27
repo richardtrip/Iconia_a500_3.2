@@ -392,6 +392,17 @@ config JRCU_DAEMON
 	  Required. The context switch when leaving the daemon is needed
 	  to get the CPU to reliably participate in end-of-batch processing.
 
+config JRCU_DAEMON_PRIO
+	int "JRCU Daemon priority"
+	depends on JRCU_DAEMON
+	default 0
+	help
+	  The JRCU daemon priority. If 0 then the daemon runs SCHED_OTHER.
+	  If >0 then the daemon runs SCHED_RR and its priority will be
+	  the value selected.  If <0 then SCHED_RR is again selected, but
+	  now its priority will be the biased downwards from the maximum
+	  possible Posix priority.
+
 config JRCU_LAZY
 	bool "Should JRCU be lazy recognizing end-of-batch"
 	depends on JRCU
