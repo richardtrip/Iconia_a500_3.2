@@ -180,7 +180,7 @@ void rcu_note_might_resched(void)
 }
 EXPORT_SYMBOL(rcu_note_might_resched);
 
-void rcu_barrier(void)
+void synchronize_sched(void)
 {
  struct rcu_synchronize rcu;
 
@@ -192,6 +192,13 @@ void rcu_barrier(void)
  wait_for_completion(&rcu.completion);
  atomic_inc(&rcu_stats.nbarriers);
 
+}
+EXPORT_SYMBOL_GPL(synchronize_sched);
+
+void rcu_barrier(void)
+{
+	synchronize_sched();
+	synchronize_sched();
 }
 EXPORT_SYMBOL_GPL(rcu_barrier);
 

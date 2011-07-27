@@ -38,13 +38,12 @@ extern void rcu_barrier(void);
 #define rcu_barrier_sched rcu_barrier
 #define rcu_barrier_bh rcu_barrier
 
-#define synchronize_rcu rcu_barrier
-#define synchronize_sched rcu_barrier
-#define synchronize_sched_expedited rcu_barrier
-#define synchronize_rcu_bh rcu_barrier
-#define synchronize_rcu_expedited rcu_barrier
-#define synchronize_rcu_bh_expedited rcu_barrier
+extern void synchronize_sched(void);
 
+#define synchronize_rcu				synchronize_sched
+#define synchronize_rcu_bh			synchronize_sched
+#define synchronize_rcu_expedited		synchronize_sched
+#define synchronize_rcu_bh_expedited		synchronize_sched
 #define rcu_init(cpu) do { } while (0)
 #define rcu_init_sched() do { } while (0)
 #define exit_rcu() do { } while (0)
