@@ -392,6 +392,23 @@ config JRCU_DAEMON
 	  Required. The context switch when leaving the daemon is needed
 	  to get the CPU to reliably participate in end-of-batch processing.
 
+config JRCU_LAZY
+	bool "Should JRCU be lazy recognizing end-of-batch"
+	depends on JRCU
+	default n
+	help
+	  If you say Y here, JRCU will on occasion fail to recognize
+	  end-of-batch for an rcu period or two.
+
+	  If you say N here, JRCU will be more aggressive; in fact it
+	  will always recognize end-of-batch at the earliest possible time.
+
+	  Being lazy should be fractionally more efficient in that JRCU
+	  inserts fewer memory barriers along some high performance kernel
+	  code paths.
+
+	  If unsure, say N.
+
 config PREEMPT_COUNT_CPU
 	# bool "Let one CPU look at another CPUs preemption count"
 	bool

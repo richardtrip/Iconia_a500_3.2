@@ -153,10 +153,8 @@ static inline void rcu_eob(int cpu)
  struct rcu_data *rd = &rcu_data[cpu];
  if (unlikely(rd->wait)) {
  rd->wait = 0;
-#ifdef CONFIG_RCU_PARANOID
- /* not needed, we can tolerate some fuzziness on exactly
- * when other CPUs see the above write insn. */
- smp_wmb();
+#ifndef CONFIG_JRCU_LAZY
+ 	smp_wmb();
 #endif
  }
 }
