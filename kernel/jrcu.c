@@ -312,8 +312,11 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
  for_each_online_cpu(cpu) {
  rd = &rcu_data[cpu];
  if (rd->wait) {
- eob = 0;
- break;
+ rd->wait = preempt_count_cpu(cpu) > idle_cpu(cpu);
+ if (rd->wait) {
+	eob = 0;
+	break;
+ }
  }
  }
 
