@@ -131,9 +131,9 @@ static struct rcu_stats {
 #define RCU_HZ_PERIOD_US	(USEC_PER_SEC / RCU_HZ)
 #define RCU_HZ_DELTA_US		(USEC_PER_SEC / (HZ * 3 / 2))
 
-int rcu_hz = RCU_HZ;
-int rcu_hz_period_us = RCU_HZ_PERIOD_US;
-int rcu_hz_delta_us = RCU_HZ_DELTA_US;
+static int rcu_hz = RCU_HZ;
+static int rcu_hz_period_us = RCU_HZ_PERIOD_US;
+static int rcu_hz_delta_us = RCU_HZ_DELTA_US;
 
 int rcu_scheduler_active __read_mostly;
 int rcu_nmi_seen __read_mostly;
