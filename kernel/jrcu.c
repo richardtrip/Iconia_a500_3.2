@@ -139,10 +139,25 @@ static u64 rcu_timestamp;
  * know what that is. For RCU to work correctly, a cpu named '0' must
  * eventually be present (but need not ever be online).
  */
+#ifdef HAVE_THREAD_INFO_CPU
 static inline int rcu_cpu(void)
 {
  return current_thread_info()->cpu;
 }
+#else
+
+static unsigned rcu_cpu_early_flag __read_mostly = 1;
+
+static inline int rcu_cpu(void)
+{
+	if (unlikely(rcu_cpu_early_flag)) {
+		if (!(rcu_scheduler_active && nr_cpu_ids > 1))
+			return 0;
+		rcu_cpu_early_flag = 0;
+	}
+	return raw_smp_processor_id();
+}
+#endif /* HAVE_THREAD_INFO_CPU */
 
 /*
  * Invoke whenever the calling CPU consents to end-of-batch. All CPUs
