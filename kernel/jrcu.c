@@ -121,6 +121,7 @@ static struct rcu_stats {
  unsigned npasses;	/* #passes made */
  unsigned nlast;		/* #passes since last end-of-batch */
  unsigned nbatches; /* #end-of-batches (eobs) seen */
+ unsigned nmis;		/* #passes discarded due to NMI */
  atomic_t nbarriers; /* #rcu barriers processed */
  atomic_t nsyncs;	/* #rcu syncs processed */
  u64 ninvoked; /* #invoked (ie, finished) callbacks */
@@ -293,17 +294,19 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
  struct rcu_data *rd;
  struct rcu_list *plist;
  int cpu, eob, prev;
+ if (!rcu_scheduler_active)
+	return;
+
+ rcu_stats.nlast++;
 
  /* If an NMI occured then the previous batch may not yet be
  * quiescent. Let's wait till it is.
  */
  if (rcu_nmi_seen) {
  rcu_nmi_seen = 0;
+ rcu_stats.nmis++;
  return;
  }
-
- if (!rcu_scheduler_active)
- return;
 
  /*
  * Find out if the current batch has ended
@@ -321,8 +324,6 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
  }
  }
 
- rcu_stats.nlast++;
-
  /*
   * Exit if batch has not ended.  But first, tickle all non-cooperating
   * CPUs if enough time has passed.
@@ -339,6 +340,7 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
 	}
 	rcu_wdog_ctr += rcu_hz_period_us;
 	return eob;
+	return;
  }
 
  /*
@@ -595,10 +597,12 @@ seq_printf(m, "\n");
 seq_printf(m, "%14u: #passes\n",
 	rcu_stats.npasses);
 
+ seq_printf(m, "%14u: #passes discarded due to NMI\n",
+	rcu_stats.nmis);
  seq_printf(m, "%14u: #passes resulting in end-of-batch\n",
  rcu_stats.nbatches);
  seq_printf(m, "%14u: #passes not resulting in end-of-batch\n",
-	rcu_stats.npasses - rcu_stats.nbatches);
+	rcu_stats.npasses - rcu_stats.nbatches - rcu_stats.nmis);
  seq_printf(m, "%14u: #passes since last end-of-batch\n",
 	rcu_stats.nlast);
  seq_printf(m, "%14u: #passes forced (0 is best)\n",
