@@ -121,6 +121,7 @@ static struct rcu_stats {
  unsigned npasses;	/* #passes made */
  unsigned nbatches; /* #end-of-batches (eobs) seen */
  atomic_t nbarriers; /* #rcu barriers processed */
+ atomic_t nsyncs;	/* #rcu syncs processed */
  u64 ninvoked; /* #invoked (ie, finished) callbacks */
  atomic_t nleft; /* #callbacks left (ie, not yet invoked) */
  unsigned nforced; /* #forced eobs (should be zero) */
@@ -209,8 +210,7 @@ void synchronize_sched(void)
  init_completion(&rcu.completion);
  call_rcu(&rcu.head, wakeme_after_rcu);
  wait_for_completion(&rcu.completion);
- atomic_inc(&rcu_stats.nbarriers);
-
+ atomic_inc(&rcu_stats.nsyncs);
 }
 EXPORT_SYMBOL_GPL(synchronize_sched);
 
@@ -218,6 +218,7 @@ void rcu_barrier(void)
 {
 	synchronize_sched();
 	synchronize_sched();
+	atomic_inc(&rcu_stats.nbarriers);
 }
 EXPORT_SYMBOL_GPL(rcu_barrier);
 
@@ -600,6 +601,8 @@ seq_printf(m, "%14u: #passes\n",
  seq_printf(m, "\n");
  seq_printf(m, "%14u: #barriers\n",
  atomic_read(&rcu_stats.nbarriers));
+ seq_printf(m, "%14u: #syncs\n",
+ atomic_read(&rcu_stats.nsyncs));
  seq_printf(m, "%14llu: #callbacks invoked\n",
  rcu_stats.ninvoked);
  seq_printf(m, "%14u: #callbacks left to invoke\n",
