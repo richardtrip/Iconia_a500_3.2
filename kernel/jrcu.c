@@ -129,7 +129,7 @@ static struct rcu_stats {
 } rcu_stats;
 #define RCU_HZ			(20)
 #define RCU_HZ_PERIOD_US	(USEC_PER_SEC / RCU_HZ)
-#define RCU_HZ_DELTA_US		(USEC_PER_SEC / (HZ * 3 / 2))
+#define RCU_HZ_DELTA_US		(USEC_PER_SEC / HZ)
 
 static int rcu_hz = RCU_HZ;
 static int rcu_hz_period_us = RCU_HZ_PERIOD_US;
