@@ -360,6 +360,7 @@ config JRCU
 	bool "A tiny single-CPU RCU for small SMP systems"
 	depends on PREEMPT
 	depends on SMP
+	select PREEMPT_COUNT_CPU
 	help
 	  This option selects a minimal-footprint RCU suitable for small SMP
 	  systems -- that is, those with fewer than 16 or perhaps 32, and
@@ -390,6 +391,16 @@ config JRCU_DAEMON
 	help
 	  Required. The context switch when leaving the daemon is needed
 	  to get the CPU to reliably participate in end-of-batch processing.
+
+config PREEMPT_COUNT_CPU
+	# bool "Let one CPU look at another CPUs preemption count"
+	bool
+	default n
+	help
+	  If Y then the preempt_count_cpu() function will be compiled into
+	  the kernel.  Its existance impacts kernel performance slightly,
+	  so this option should be selected only if other kernel features
+	  that use preempt_count_cpu() are also selected.
 
 config RCU_TRACE
 	bool "Enable tracing for RCU"
