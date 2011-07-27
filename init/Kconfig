@@ -356,6 +356,22 @@ config TREE_PREEMPT_RCU
 	  is also required.  It also scales down nicely to
 	  smaller systems.
 
+config JRCU
+	bool "A tiny single-CPU RCU for small SMP systems"
+	depends on PREEMPT
+	depends on SMP
+	help
+	  This option selects a minimal-footprint RCU suitable for small SMP
+	  systems -- that is, those with fewer than 16 or perhaps 32, and
+	  certainly less than 64 processors.
+
+	  This RCU variant may be a good choice for systems with low latency
+	  requirements.  It does RCU garbage collection from a single CPU
+	  rather than have each CPU do its own.  This frees up all but one
+	  CPU from interference by this periodic requirement.
+
+	  Most users should say N here.
+
 config TINY_RCU
 	bool "UP-only small-memory-footprint RCU"
 	depends on !SMP
@@ -366,6 +382,17 @@ config TINY_RCU
 	  memory footprint of RCU.
 
 endchoice
+
+config JRCU_DAEMON
+	bool "Drive JRCU from a daemon"
+	depends on JRCU
+	default Y
+	help
+	  Normally JRCU end-of-batch processing is driven from a SoftIRQ
+	  'interrupt' driver.  If you consider this to be too invasive,
+	  this option can be used to drive JRCU from a kernel daemon.
+
+	  If unsure, say Y here.
 
 config RCU_TRACE
 	bool "Enable tracing for RCU"
