@@ -69,6 +69,7 @@ extern void rcu_note_context_switch(int cpu);
 
 #define rcu_sched_qs rcu_note_context_switch
 #define rcu_bh_qs rcu_note_context_switch
+extern void rcu_note_might_resched(void);
 
 extern void rcu_scheduler_starting(void);
 extern int rcu_scheduler_active __read_mostly;

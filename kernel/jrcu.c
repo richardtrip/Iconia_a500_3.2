@@ -164,6 +164,15 @@ void rcu_note_context_switch(int cpu)
 {
  rcu_eob(cpu);
 }
+void rcu_note_might_resched(void)
+{
+	unsigned long flags;
+
+	raw_local_irq_save(flags);
+	rcu_eob(rcu_cpu());
+	raw_local_irq_restore(flags);
+}
+EXPORT_SYMBOL(rcu_note_might_resched);
 
 void rcu_barrier(void)
 {
