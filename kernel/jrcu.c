@@ -583,21 +583,27 @@ static int rcu_debugfs_show(struct seq_file *m, void *unused)
 	else
 		seq_printf(m, "%14s: daemon priority\n", "none, no daemon");
 #endif
- seq_printf(m, "%14u: #passes seen\n",
+
+seq_printf(m, "\n");
+seq_printf(m, "%14u: #passes\n",
 	rcu_stats.npasses);
 
- seq_printf(m, "%14u: #batches seen\n",
+ seq_printf(m, "%14u: #passes resulting in end-of-batch\n",
  rcu_stats.nbatches);
- seq_printf(m, "%14u: #barriers seen\n",
+ seq_printf(m, "%14u: #passes not resulting in end-of-batch\n",
+	rcu_stats.npasses - rcu_stats.nbatches);
+ seq_printf(m, "%14u: #msecs since last end-of-batch\n",
+	msecs);
+ seq_printf(m, "%14u: #passes forced (0 is best)\n",
+	rcu_stats.nforced);
+
+ seq_printf(m, "\n");
+ seq_printf(m, "%14u: #barriers\n",
  atomic_read(&rcu_stats.nbarriers));
  seq_printf(m, "%14llu: #callbacks invoked\n",
  rcu_stats.ninvoked);
  seq_printf(m, "%14u: #callbacks left to invoke\n",
  atomic_read(&rcu_stats.nleft));
- seq_printf(m, "%14u: #msecs since last end-of-batch\n",
- msecs);
- seq_printf(m, "%14u: #passes forced (0 is best)\n",
- rcu_stats.nforced);
  seq_printf(m, "\n");
 
  for_each_online_cpu(cpu)
