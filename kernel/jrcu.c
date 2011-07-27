@@ -136,6 +136,7 @@ int rcu_hz_delta_us = RCU_HZ_DELTA_US;
 int rcu_scheduler_active __read_mostly;
 int rcu_nmi_seen __read_mostly;
 static u64 rcu_timestamp;
+int rcu_wdog = 30;		/* rcu watchdog interval, in seconds */
 
 /*
  * Return our CPU id or zero if we are too early in the boot process to
@@ -322,7 +323,7 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
  */
  rcu_now = sched_clock();
  if (!eob && !rcu_timestamp
- && ((rcu_now - rcu_timestamp) > 3LL * NSEC_PER_SEC)) {
+ && ((rcu_now - rcu_timestamp) > (s64)rcu_wdog * NSEC_PER_SEC)) {
  rcu_stats.nforced++;
  WARN_ON_ONCE(1);
  eob = 1;
@@ -570,6 +571,7 @@ static int rcu_debugfs_show(struct seq_file *m, void *unused)
  msecs = div_s64(sched_clock() - rcu_timestamp, NSEC_PER_MSEC);
  raw_local_irq_enable();
  seq_printf(m, "%14u: hz\n", rcu_hz);
+ seq_printf(m, "%14u: watchdog (secs)\n", rcu_wdog);
 #ifdef CONFIG_JRCU_DAEMON
 	if (rcu_daemon)
 		seq_printf(m, "%14u: daemon priority\n", rcu_priority);
@@ -664,6 +666,12 @@ if (__get_user(c, &buffer[i++]))
  return -EINVAL;
  rcu_hz = rcu_hz_wanted;
  rcu_hz_period_us = USEC_PER_SEC / rcu_hz;
+ } else if (!strncmp(token, "wdog=", 5)) {
+	int wdog = -1;
+	sscanf(&token[5], "%d", &wdog);
+	if (wdog < 3 || wdog > 1000)
+		return -EINVAL;
+	rcu_wdog = wdog;
  } else
  return -EINVAL;
 
