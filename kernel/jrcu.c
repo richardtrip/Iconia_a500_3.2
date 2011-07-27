@@ -650,6 +650,7 @@ i = 0;
  if (__get_user(c, &buffer[i++]))
  return -EFAULT;
 
+next:
  /* Token extractor -- first, skip leading whitepace */
  while (c && isspace(c) && i < count) {
  if (__get_user(c, &buffer[i++]))
@@ -685,7 +686,7 @@ if (__get_user(c, &buffer[i++]))
  } else
  return -EINVAL;
 
- return count;
+ goto next;
 }
 
 static int rcu_debugfs_open(struct inode *inode, struct file *file)
