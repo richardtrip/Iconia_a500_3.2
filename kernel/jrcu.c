@@ -119,6 +119,7 @@ static struct rcu_data rcu_data[NR_CPUS];
 /* debug & statistics stuff */
 static struct rcu_stats {
  unsigned npasses;	/* #passes made */
+ unsigned nlast;		/* #passes since last end-of-batch */
  unsigned nbatches; /* #end-of-batches (eobs) seen */
  atomic_t nbarriers; /* #rcu barriers processed */
  atomic_t nsyncs;	/* #rcu syncs processed */
@@ -322,6 +323,8 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
  * gone by.
  */
  rcu_now = sched_clock();
+ rcu_stats.nlast++;
+
  if (!eob && !rcu_timestamp
  && ((rcu_now - rcu_timestamp) > (s64)rcu_wdog * NSEC_PER_SEC)) {
  rcu_stats.nforced++;
@@ -385,6 +388,7 @@ prev = ACCESS_ONCE(rcu_which) ^ 1;
  xchg(&rcu_which, prev); /* only place where rcu_which is written to */
 
  rcu_stats.nbatches++;
+ rcu_stats.nlast = 0;
 }
 
 static void rcu_delimit_batches(void)
@@ -593,6 +597,8 @@ seq_printf(m, "%14u: #passes\n",
  rcu_stats.nbatches);
  seq_printf(m, "%14u: #passes not resulting in end-of-batch\n",
 	rcu_stats.npasses - rcu_stats.nbatches);
+ seq_printf(m, "%14u: #passes since last end-of-batch\n",
+	rcu_stats.nlast);
  seq_printf(m, "%14u: #msecs since last end-of-batch\n",
 	msecs);
  seq_printf(m, "%14u: #passes forced (0 is best)\n",
