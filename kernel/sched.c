@@ -1200,6 +1200,15 @@ static void resched_cpu(int cpu)
 	resched_task(cpu_curr(cpu));
 	raw_spin_unlock_irqrestore(&rq->lock, flags);
 }
+void force_cpu_resched(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&rq->lock, flags);
+	resched_task(cpu_curr(cpu));
+	raw_spin_unlock_irqrestore(&rq->lock, flags);
+}
 
 #ifdef CONFIG_NO_HZ
 /*
@@ -1305,6 +1314,11 @@ static void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 
 static void sched_avg_update(struct rq *rq)
 {
+}
+
+void force_cpu_resched(int cpu)
+{
+	set_need_resched();
 }
 #endif /* CONFIG_SMP */
 

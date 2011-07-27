@@ -318,25 +318,30 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
 
  /*
  * Force end-of-batch if too much time (n seconds) has
- * gone by. The forcing method is slightly questionable,
- * hence the WARN_ON.
+ * gone by.
  */
  rcu_now = sched_clock();
  if (!eob && !rcu_timestamp
  && ((rcu_now - rcu_timestamp) > (s64)rcu_wdog * NSEC_PER_SEC)) {
  rcu_stats.nforced++;
- WARN_ON_ONCE(1);
- eob = 1;
+ for_each_online_cpu(cpu) {
+	if (rcu_data[cpu].wait)
+		force_cpu_resched(cpu);
+	}
+	rcu_timestamp = rcu_now;
  }
 
  /*
  * Just return if the current batch has not yet
- * ended. Also, keep track of just how long it
- * has been since we've actually seen end-of-batch.
+ * ended.
  */
 
  if (!eob)
  return;
+
+ /*
+  * Batch has ended.  First, restart watchdog.
+  */
 
  rcu_timestamp = rcu_now;
 
