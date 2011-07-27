@@ -115,6 +115,7 @@ static struct rcu_data rcu_data[NR_CPUS];
 
 /* debug & statistics stuff */
 static struct rcu_stats {
+ unsigned npasses;	/* #passes made */
  unsigned nbatches; /* #end-of-batches (eobs) seen */
  atomic_t nbarriers; /* #rcu barriers processed */
  u64 ninvoked; /* #invoked (ie, finished) callbacks */
@@ -360,6 +361,7 @@ static void rcu_delimit_batches(void)
  struct rcu_list pending;
 
  rcu_list_init(&pending);
+ rcu_stats.npasses++;
 
  raw_local_irq_save(flags);
  smp_rmb();
@@ -526,6 +528,8 @@ static int rcu_debugfs_show(struct seq_file *m, void *unused)
  raw_local_irq_disable();
  msecs = div_s64(sched_clock() - rcu_timestamp, NSEC_PER_MSEC);
  raw_local_irq_enable();
+ seq_printf(m, "%14u: #passes seen\n",
+	rcu_stats.npasses);
 
  seq_printf(m, "%14u: #batches seen\n",
  rcu_stats.nbatches);
