@@ -366,14 +366,16 @@ prev = ACCESS_ONCE(rcu_which) ^ 1;
  else
  rd->wait = 0;
  }
+ smp_wmb(); /* just paranoia, the below xchg should do this on all archs */
 
  /*
-  * Swap current and previous lists.  The other cpus must not see this
-  * out-of-order w.r.t. the above emptying of each cpu's previous list,
-  * hence the smp_wmb.
+  * Swap current and previous lists.  The other cpus must not
+  * see this out-of-order w.r.t. the above emptying of each cpu's
+  * previous list.  The xchg accomplishes that and, as a side (but
+  * seemingly unneeded) bonus, keeps this cpu from advancing its insn
+  * counter until the results of that xchg are visible on other cpus.
   */
- smp_wmb();
- rcu_which = prev;
+ xchg(&rcu_which, prev); /* only place where rcu_which is written to */
 
  rcu_stats.nbatches++;
 }
