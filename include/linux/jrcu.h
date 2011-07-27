@@ -20,9 +20,10 @@
  */
 #ifndef __LINUX_JRCU_H
 #define __LINUX_JRCU_H
+extern void rcu_read_unlock_jrcu(void);
 
 #define __rcu_read_lock() preempt_disable()
-#define __rcu_read_unlock() preempt_enable()
+#define __rcu_read_unlock()			rcu_read_unlock_jrcu()
 
 #define __rcu_read_lock_bh() __rcu_read_lock()
 #define __rcu_read_unlock_bh() __rcu_read_unlock()

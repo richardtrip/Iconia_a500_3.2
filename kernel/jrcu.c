@@ -152,6 +152,13 @@ static inline void rcu_eob(int cpu)
 #endif
  }
 }
+void rcu_read_unlock_jrcu(void)
+{
+	if (preempt_count() == 1)
+		rcu_eob(rcu_cpu());
+	preempt_enable();
+}
+EXPORT_SYMBOL_GPL(rcu_read_unlock_jrcu);
 
 void rcu_note_context_switch(int cpu)
 {
