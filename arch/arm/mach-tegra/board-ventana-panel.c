@@ -45,6 +45,10 @@
 #define ventana_hdmi_enb	TEGRA_GPIO_PV5
 #endif
 
+/*panel power on sequence timing*/
+#define ventana_pnl_to_lvds_ms	0
+#define ventana_lvds_to_bl_ms	200
+
 static struct regulator *ventana_hdmi_reg = NULL;
 static struct regulator *ventana_hdmi_pll = NULL;
 
@@ -107,8 +111,9 @@ static int ventana_panel_enable(void)
 	regulator_put(reg);
 
 	gpio_set_value(ventana_pnl_pwr_enb, 1);
-	msleep(200);
+	mdelay(ventana_pnl_to_lvds_ms);
 	gpio_set_value(ventana_lvds_shutdown, 1);
+	mdelay(ventana_lvds_to_bl_ms);
 	return 0;
 }
 
