@@ -338,8 +338,10 @@ static void tegra_dsi_init_sw(struct tegra_dc *dc,
 	/*   for the given display timing 	*/
 	pixel_clk_hz = h_width_pixels * v_width_lines * dsi->info.refresh_rate;
 
-	/* Pixel byte rate on DSI interface */
-	byte_clk_hz	= (pixel_clk_hz * dsi->pixel_scaler_mul) /
+	dc->pixel_clk = pixel_clk_hz;
+
+	/* Calculate minimum byte rate on DSI interface. */
+	byte_clk_hz = (pixel_clk_hz * dsi->pixel_scaler_mul) /
 			(dsi->pixel_scaler_div * dsi->info.n_data_lanes);
 
 	dsi->default_pixel_clk_khz = pixel_clk_hz / 1000;
