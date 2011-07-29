@@ -51,7 +51,8 @@ static int use_dynamic_emc = 1;
 
 module_param_named(use_dynamic_emc, use_dynamic_emc, int, S_IRUGO | S_IWUSR);
 
-static int windows_idle_detection_time = 0;
+/* set default windows idle time as 2000ms for power saving purpose */
+static int windows_idle_detection_time = 2000;
 
 module_param_named(windows_idle_detection_time, windows_idle_detection_time,
 		   int, S_IRUGO | S_IWUSR);
@@ -531,6 +532,11 @@ static unsigned int tegra_dc_find_max_bandwidth(struct tegra_dc_win *wins[],
 
 /* 8 bits per byte (1 << 3) */
 #define BIT_TO_BYTE_SHIFT 3
+/*
+ * Assuming 50% (X >> 1) efficiency: i.e. if we calculate we need 70MBps, we
+ * will request 140MBps from EMC.
+ */
+#define MEM_EFFICIENCY_SHIFT 1
 static unsigned long tegra_dc_get_emc_rate(struct tegra_dc_win *wins[], int n)
 {
 	int i;
@@ -566,9 +572,7 @@ static unsigned long tegra_dc_get_emc_rate(struct tegra_dc_win *wins[], int n)
 			(WIN_IS_TILED(w) ? TILED_WINDOWS_BW_MULTIPLIER : 1);
 	}
 
-	max = tegra_dc_find_max_bandwidth(wins, bw, n);
-	/* multiply bandwidth by 2.5 assuming 40% memory efficiency */
-	max = (max << 1) + (max >> 1);
+	max = tegra_dc_find_max_bandwidth(wins, bw, n) << MEM_EFFICIENCY_SHIFT;
 
 	ret = EMC_BW_TO_FREQ(max);
 
@@ -582,6 +586,7 @@ static unsigned long tegra_dc_get_emc_rate(struct tegra_dc_win *wins[], int n)
 	return ret;
 }
 #undef BIT_TO_BYTE_SHIFT
+#undef MEM_EFFICIENCY_SHIFT
 
 static void tegra_dc_change_emc(struct tegra_dc *dc)
 {
@@ -610,7 +615,7 @@ static void tegra_dc_reduce_emc_worker(struct work_struct *work)
 	mutex_unlock(&dc->lock);
 }
 
-static int tegra_dc_set_dynamic_emc(struct tegra_dc_win *windows[], int n)
+int  tegra_dc_set_dynamic_emc(struct tegra_dc_win *windows[], int n)
 {
 	unsigned long new_rate;
 	struct tegra_dc *dc;
@@ -619,6 +624,13 @@ static int tegra_dc_set_dynamic_emc(struct tegra_dc_win *windows[], int n)
 		return 0;
 
 	dc = windows[0]->dc;
+
+	mutex_lock(&dc->lock);
+
+	if (!dc->enabled) {
+		mutex_unlock(&dc->lock);
+		return -EFAULT;
+	}
 
 	/* calculate the new rate based on this POST */
 	new_rate = tegra_dc_get_emc_rate(windows, n);
@@ -637,10 +649,12 @@ static int tegra_dc_set_dynamic_emc(struct tegra_dc_win *windows[], int n)
 		schedule_delayed_work(&dc->reduce_emc_clk_work,
 			msecs_to_jiffies(windows_idle_detection_time));
 
+	mutex_unlock(&dc->lock);
+
 	return 0;
 }
 
-int tegra_dc_set_default_emc(struct tegra_dc *dc)
+int  tegra_dc_set_default_emc(struct tegra_dc *dc)
 {
 	/*
 	 * POST happens whenever this function is called, we first delete any
@@ -1778,7 +1792,6 @@ static int tegra_dc_probe(struct nvhost_device *ndev)
 	void __iomem *base;
 	int irq;
 	int i;
-	unsigned long emc_clk_rate;
 
 	if (!ndev->dev.platform_data) {
 		dev_err(&ndev->dev, "no platform data\n");
