@@ -692,7 +692,8 @@ static struct fb_ops tegra_fb_ops = {
 
 void tegra_fb_update_monspecs(struct tegra_fb_info *fb_info,
 			      struct fb_monspecs *specs,
-			      bool (*mode_filter)(const struct tegra_dc *dc, struct fb_videomode *mode))
+			      bool (*mode_filter)(const struct tegra_dc *dc,
+						  struct fb_videomode *mode))
 {
 	struct fb_event event;
 	struct fb_modelist *m;
