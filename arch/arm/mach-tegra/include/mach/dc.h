@@ -227,11 +227,11 @@ struct tegra_dc_out {
 	int				hotplug_gpio;
 	const char			*parent_clk;
 
-	unsigned		max_pixclock;
-	unsigned		order;
-	unsigned		align;
-	unsigned		depth;
-	unsigned		dither;
+	unsigned			max_pixclock;
+	unsigned			order;
+	unsigned			align;
+	unsigned			depth;
+	unsigned			dither;
 
 	unsigned		height; /* mm */
 	unsigned		width; /* mm */

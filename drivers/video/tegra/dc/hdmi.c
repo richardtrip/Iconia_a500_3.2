@@ -578,7 +578,9 @@ static bool tegra_dc_hdmi_valid_pixclock(const struct tegra_dc *dc,
 {
 	unsigned max_pixclock = tegra_dc_get_out_max_pixclock(dc);
 	if (max_pixclock) {
-		// this might look counter-intuitive, but pixclock's unit is picos(not Khz)
+		/* this might look counter-intuitive,
+		 * but pixclock's unit is picos(not Khz)
+		 */
 		return mode->pixclock >= max_pixclock;
 	} else {
 		return true;
@@ -595,9 +597,11 @@ static bool tegra_dc_hdmi_mode_filter(const struct tegra_dc *dc,
 		return false;
 
 	for (i = 0; i < ARRAY_SIZE(tegra_dc_hdmi_supported_modes); i++) {
-		if (tegra_dc_hdmi_mode_equal(&tegra_dc_hdmi_supported_modes[i], mode) &&
-			tegra_dc_hdmi_valid_pixclock(dc, &tegra_dc_hdmi_supported_modes[i])) {
-			memcpy(mode, &tegra_dc_hdmi_supported_modes[i], sizeof(*mode));
+		const struct fb_videomode *supported_mode
+				= &tegra_dc_hdmi_supported_modes[i];
+		if (tegra_dc_hdmi_mode_equal(supported_mode, mode) &&
+		    tegra_dc_hdmi_valid_pixclock(dc, supported_mode)) {
+			memcpy(mode, supported_mode, sizeof(*mode));
 			mode->flag = FB_MODE_IS_DETAILED;
 			clock_per_frame = tegra_dc_calc_clock_per_frame(mode);
 			mode->refresh = (PICOS2KHZ(mode->pixclock) * 1000)
