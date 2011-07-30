@@ -36,7 +36,7 @@
 
 /* Initial implementation of userspace voltage control */
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-#define FREQCOUNT 11
+#define FREQCOUNT 13
 #else
 #define FREQCOUNT 9
 #endif
@@ -44,13 +44,13 @@
 #define CPUMVMAX 1400
 #define CPUMVMIN 770
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpufrequency[FREQCOUNT]  = { 1504000, 1408000, 1200000, 1000000, 912000, 816000, 760000, 608000, 456000, 312000, 216000 };
+int cpufrequency[FREQCOUNT]  = { 1646000, 1600000, 1504000, 1400000, 1200000, 1000000, 912000, 816000, 760000, 608000, 456000, 312000, 216000 };
 #else
 int cpufrequency[FREQCOUNT]  = { 1200000, 1000000, 912000, 816000, 760000, 608000, 456000, 312000, 216000 };
 #endif
 
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpuvoltage[FREQCOUNT] = { 1250, 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770};
+int cpuvoltage[FREQCOUNT] = { 1450, 1425, 1300, 1250, 1150, 1100, 1050, 1025, 975, 950, 875, 825, 750};
 #else
 int cpuvoltage[FREQCOUNT] = { 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770};
 #endif
