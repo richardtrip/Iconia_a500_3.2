@@ -50,12 +50,13 @@ int cpufrequency[FREQCOUNT]  = { 1200000, 1000000, 912000, 816000, 760000, 60800
 #endif
 
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpuvoltage[FREQCOUNT] = { 1450, 1400, 1300, 1250, 1150, 1100, 1050, 1025, 975, 950, 875, 825, 750};
+int cpuvoltage[FREQCOUNT] = { 1400, 1350, 1250, 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770, 770 };
 #else
 int cpuvoltage[FREQCOUNT] = { 1225, 1125, 1100, 1050, 1000, 975, 900, 825, 770};
 #endif
 
 int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+bool cpuuvbigendian = true;
 
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
@@ -689,23 +690,36 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 static ssize_t show_frequency_voltage_table(struct cpufreq_policy *policy, char *buf)
 {
 	char *table = buf;
-	int i;
+	int i, start = 0, end = FREQCOUNT - 1, step = 1;
+	if (!cpuuvbigendian)
+	{
+		start = FREQCOUNT - 1;
+		end = 0;
+		step = -1;
+	}
+	
 	for (i = 0; i < FREQCOUNT; i++)
-		table += sprintf(table, "%d %d %d\n", cpufrequency[i], cpuvoltage[i], (cpuvoltage[i]-cpuuvoffset[i]));
+		table += sprintf(table, "%d %d %d\n", cpufrequency[start+(i*step)], cpuvoltage[start+(i*step)], (cpuvoltage[start+(i*step)]-cpuuvoffset[start+(i*step)]));
 	return table - buf;
 }
 
 static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
 {
 	char *table = buf;
-	int i;
+	int i, start = 0, end = FREQCOUNT - 1, step = 1;
+	if (!cpuuvbigendian)
+	{
+		start = FREQCOUNT - 1;
+		end = 0;
+		step = -1;
+	}
 
-	table += sprintf(table, "%d", cpuuvoffset[0]);
+	table += sprintf(table, "%d", cpuuvoffset[start]);
 	for (i = 1; i < FREQCOUNT - 1; i++)
 	{
-		table += sprintf(table, " %d", cpuuvoffset[i]);
+		table += sprintf(table, " %d", cpuuvoffset[start+(i*step)]);
 	}
-	table += sprintf(table, " %d\n", cpuuvoffset[FREQCOUNT - 1]);
+	table += sprintf(table, " %d\n", cpuuvoffset[end]);
 
 	return table - buf;
 }
@@ -720,19 +734,41 @@ static ssize_t show_cpuinfo_min_mV(struct cpufreq_policy *policy, char *buf)
 	sprintf(buf, "%u\n", CPUMVMIN);
 }
 
+static ssize_t show_UV_mV_table_bigendian(struct cpufreq_policy *policy, char *buf)
+{
+	sprintf(buf, "%d\n", cpuuvbigendian);
+}
+
+static ssize_t store_UV_mV_table_bigendian(struct cpufreq_policy *policy, char *buf, size_t count)
+{
+	int tmp;
+	unsigned int ret = sscanf(buf, "%d", &tmp);
+	if (tmp == 0) cpuuvbigendian = false;
+	else if (tmp == 1) cpuuvbigendian = true;
+	else return -EINVAL;
+	return count;
+}
+
 static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, char *buf, size_t count)
 {
 	int tmptable[FREQCOUNT];
-	int i;
+	int i, start = 0, end = FREQCOUNT - 1, step = 1;
+	if (!cpuuvbigendian)
+	{
+		start = FREQCOUNT - 1;
+		end = 0;
+		step = -1;
+	}
+
 	unsigned int ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %d", &tmptable[0], &tmptable[1], &tmptable[2], &tmptable[3], &tmptable[4], &tmptable[5], &tmptable[6], &tmptable[7], &tmptable[8], &tmptable[9], &tmptable[10], &tmptable[11], &tmptable[12]);
 	if (ret != FREQCOUNT)
 		return -EINVAL;
 	for (i = 0; i < FREQCOUNT; i++)
 	{
-		if ((cpuvoltage[i]-tmptable[i]) > CPUMVMAX || (cpuvoltage[i]-tmptable[i]) < CPUMVMIN) // Keep within constraints
+		if ((cpuvoltage[start+(i*step)]-tmptable[i]) > CPUMVMAX || (cpuvoltage[start+(i*step)]-tmptable[i]) < CPUMVMIN) // Keep within constraints
 			return -EINVAL;
 		else
-			cpuuvoffset[i] = tmptable[i];
+			cpuuvoffset[start+(i*step)] = tmptable[i];
 	}
 	return count;
 }
@@ -755,6 +791,7 @@ cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
 cpufreq_freq_attr_rw(UV_mV_table);
+cpufreq_freq_attr_rw(UV_mV_table_bigendian);
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -772,6 +809,7 @@ static struct attribute *default_attrs[] = {
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
 	&UV_mV_table.attr,
+	&UV_mV_table_bigendian.attr,
 	NULL
 };
 
