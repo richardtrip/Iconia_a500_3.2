@@ -606,7 +606,8 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"Int Spk", NULL, "LON"},
 	{"Int Spk", NULL, "LOP"},
 
-	/* internal mic is mono */
+	/* internal mic is stereo */
+	{"IN1L", NULL, "Int Mic"},
 	{"IN1R", NULL, "Int Mic"},
 
 	/* external mic is stereo */
