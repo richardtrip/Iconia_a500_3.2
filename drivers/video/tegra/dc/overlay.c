@@ -38,6 +38,11 @@
 #include "../nvmap/nvmap.h"
 #include "overlay.h"
 
+#include "dc_input.h"
+
+/* Minimum extra shot for DIDIM if n shot is enabled. */
+#define TEGRA_DC_DIDIM_MIN_SHOT	1
+
 DEFINE_MUTEX(tegra_flip_lock);
 
 struct overlay_client;
@@ -64,6 +69,8 @@ struct tegra_overlay_info {
 	struct tegra_dc_blend	blend;
 
 	struct workqueue_struct	*flip_wq;
+
+	struct dc_input *input;
 
 	/* Big enough for tegra_dc%u when %u < 10 */
 	char			name[10];
@@ -528,6 +535,7 @@ static int tegra_overlay_ioctl_flip(struct overlay_client *client,
 		mutex_unlock(&client->dev->dc->lock);
 		return -EPIPE;
 	}
+
 	mutex_unlock(&client->dev->dc->lock);
 
 	if (copy_from_user(&flip_args, arg, sizeof(flip_args)))
@@ -569,6 +577,8 @@ static int tegra_overlay_ioctl_flip(struct overlay_client *client,
 
 	if (copy_to_user(arg, &flip_args, sizeof(flip_args)))
 		return -EFAULT;
+
+	notify_overlay_flip(client->dev->input);
 
 	return 0;
 }
@@ -753,8 +763,18 @@ struct tegra_overlay_info *tegra_overlay_register(struct nvhost_device *ndev,
 
 	dev_info(&ndev->dev, "registered overlay\n");
 
-	return dev;
+	dev->input = dc_input_alloc();
+	if (!dev->input)
+		goto err_delete_wq;
+	e = dc_input_init(&dev->dev, dev->input);
+	if (e)
+		goto err_delete_input;
 
+	return dev;
+err_delete_input:
+	dc_input_destroy(dev->input);
+	dc_input_free(dev->input);
+	dev->input = NULL;
 err_delete_wq:
 err_free:
 fail:
@@ -766,6 +786,8 @@ fail:
 
 void tegra_overlay_unregister(struct tegra_overlay_info *info)
 {
+	dc_input_destroy(info->input);
+	dc_input_free(info->input);
 	misc_deregister(&info->dev);
 
 	kfree(info);
