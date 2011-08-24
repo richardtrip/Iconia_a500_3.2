@@ -772,7 +772,6 @@ int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n)
 					DC_WIN_LINE_STRIDE);
 		}
 
-		if (WIN_IS_TILED(win))
 		h_offset = win->x;
 		if (invert_h) {
 			h_offset += win->w - 1;
