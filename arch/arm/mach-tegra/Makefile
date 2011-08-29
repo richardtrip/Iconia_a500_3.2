@@ -56,6 +56,10 @@ obj-y                                   += nv/
 
 obj-${CONFIG_TEGRA_SPI_SLAVE}		+= spi_tegra_slave.o
 
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MT_T9)   += board-touch-atmel_maxtouch.o
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT)     += board-touch-atmel_maxtouch.o
+obj-$(CONFIG_TOUCHSCREEN_PANJIT_I2C)    += board-touch-panjit_i2c.o
+
 obj-${CONFIG_MACH_HARMONY}              += board-harmony.o
 obj-${CONFIG_MACH_HARMONY}              += board-harmony-pinmux.o
 obj-${CONFIG_MACH_HARMONY}              += board-harmony-panel.o
@@ -70,6 +74,7 @@ obj-${CONFIG_MACH_VENTANA}              += board-ventana-jack.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-sensors.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-kbc.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-memory.o
+obj-${CONFIG_MACH_VENTANA}              += board-touch.o
 
 obj-${CONFIG_MACH_WHISTLER}             += board-whistler.o
 obj-${CONFIG_MACH_WHISTLER}             += board-whistler-pinmux.o
@@ -90,6 +95,7 @@ obj-${CONFIG_MACH_ACER_PICASSO}              += board-ventana-jack.o
 obj-${CONFIG_MACH_ACER_PICASSO}              += board-ventana-sensors.o
 obj-${CONFIG_MACH_ACER_PICASSO}              += board-ventana-kbc.o
 obj-${CONFIG_MACH_ACER_PICASSO}              += board-ventana-memory.o
+obj-${CONFIG_MACH_ACER_PICASSO}              += board-touch.o
 
 obj-${CONFIG_MACH_ACER_MAYA}                 += board-ventana.o
 obj-${CONFIG_MACH_ACER_MAYA}                 += board-ventana-pinmux.o
