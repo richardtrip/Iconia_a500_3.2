@@ -24,6 +24,7 @@ int ventana_pinmux_init(void);
 int ventana_panel_init(void);
 int ventana_wired_jack_init(void);
 int ventana_sensors_init(void);
+int touch_init(void);
 int ventana_kbc_init(void);
 int ventana_emc_init(void);
 
@@ -60,5 +61,17 @@ int ventana_emc_init(void);
 /* Interrupt numbers from external peripherals */
 #define TPS6586X_INT_BASE	TEGRA_NR_IRQS
 #define TPS6586X_INT_END	(TPS6586X_INT_BASE + 32)
+
+/* Touchscreen GPIO addresses   */
+#ifdef CONFIG_TOUCHSCREEN_PANJIT_I2C
+#define TOUCH_GPIO_IRQ_PANJIT	TEGRA_GPIO_PV6
+#define TOUCH_GPIO_RST_PANJIT	TEGRA_GPIO_PQ7
+#endif
+
+#if defined(CONFIG_TOUCHSCREEN_ATMEL_MXT) || defined(CONFIG_TOUCHSCREEN_ATMEL_MT_T9)
+#define TOUCH_GPIO_IRQ_ATMEL_T9	TEGRA_GPIO_PV6
+#define TOUCH_GPIO_RST_ATMEL_T9	TEGRA_GPIO_PQ7
+#define TOUCH_BUS_ATMEL_T9	0
+#endif
 
 #endif
