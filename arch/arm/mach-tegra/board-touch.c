@@ -165,7 +165,7 @@ int __init touch_init(void)
 
 	tegra_get_board_info(&BoardInfo);
 
-#if defined(CONFIG_MACH_CARDHU)
+#if defined(CONFIG_MACH_ACER_PICASSO)
 #if defined(CONFIG_TOUCHSCREEN_ATMEL_MT_T9)
 		BoardInfo.sku = ATMEL_TOUCHSCREEN_SKU;
 #endif
