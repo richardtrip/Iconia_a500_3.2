@@ -49,7 +49,7 @@
 
 #if defined(CONFIG_MACH_ACER_PICASSO)
 #include "board-ventana.h"
-#define MXT_I2C_ADDRESS	MXT1386_I2C_ADDR3
+#define MXT_I2C_ADDRESS	MXT1386_I2C_ADDR1
 #endif
 
 #include "gpio-names.h"
