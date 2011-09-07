@@ -690,8 +690,6 @@ int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n)
 		return -EFAULT;
 	}
 
-	tegra_dc_set_dynamic_emc(windows, n);
-
 	if (no_vsync)
 		tegra_dc_writel(dc, WRITE_MUX_ACTIVE | READ_MUX_ACTIVE, DC_CMD_STATE_ACCESS);
 	else
