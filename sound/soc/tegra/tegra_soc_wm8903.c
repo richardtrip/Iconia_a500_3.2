@@ -64,7 +64,8 @@ extern struct wired_jack_conf tegra_wired_jack_conf;
 #define GPIO_DIR_IN			(0x1 << B07_GPx_DIR)
 
 #define ADC_DIGITAL_VOL_9DB		0x1D8
-#define ADC_DIGITAL_VOL_12DB	0x1E0
+#define ADC_DIGITAL_VOL_12DB		0x1E0
+#define ADC_DIGITAL_VOL_17_625_DB      0x1FF
 #define ADC_ANALOG_VOLUME		0x1C
 #define DRC_MAX_36DB			0x03
 
@@ -114,9 +115,9 @@ static void configure_dmic(struct snd_soc_codec *codec)
 
 		/* Enable ADC Digital volumes */
 		snd_soc_write(codec, WM8903_ADC_DIGITAL_VOLUME_LEFT,
-					ADC_DIGITAL_VOL_9DB);
+					ADC_DIGITAL_VOL_17_625_DB);
 		snd_soc_write(codec, WM8903_ADC_DIGITAL_VOLUME_RIGHT,
-					ADC_DIGITAL_VOL_9DB);
+					ADC_DIGITAL_VOL_17_625_DB);
 
 		/* Enable DIG_MIC */
 		test4 = WM8903_ADC_DIG_MIC;
