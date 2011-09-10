@@ -191,7 +191,7 @@ static int __devinit nct1008_configure_sensor(struct nct1008_data* data)
 	 */
 	data->config = value = pdata->ext_range ?
 		(STANDBY_BIT | THERM2_BIT | EXTENDED_RANGE_BIT) :
-		(STANDBY_BIT);
+		(STANDBY_BIT | THERM2_BIT);
 
 	err = i2c_smbus_write_byte_data(client, CONFIG_WR, value);
 	if (err < 0)
