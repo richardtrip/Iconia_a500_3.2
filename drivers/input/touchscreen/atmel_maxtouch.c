@@ -699,6 +699,59 @@ static ssize_t debugmsg_store(struct kobject *kobj, struct kobj_attribute *attr,
 	return n;
 }
 
+static ssize_t sensitivity_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
+{
+	u8 sens_buffer[8] = {0};
+	if (mxt_read_block(mxt->client, MTouchOBJInf16, 8, sens_buffer) < 0)
+		return sprintf(buf, "fail\n");
+	return sprintf(buf, "0x%x\n",sens_buffer[7]);
+}
+
+static ssize_t sensitivity_store(struct kobject *kobj, struct kobj_attribute *attr, const char * buf, size_t n)
+{
+	int sens = myatoi(buf);
+	u8 sen_value[1] = {sens};
+	u16 sens_addr16;
+	CalculateAddr16bits(MTouchOBJInf[2], MTouchOBJInf[1], &sens_addr16, 7);
+	if(mxt_write_block(mxt->client, sens_addr16, 1, sen_value) < 0)
+		mxt_debug(DEBUG_ERROR, "sensitivity_store fail\n");
+	if (ATMEL_Backup(mxt) < 0)
+		mxt_debug(DEBUG_ERROR, "maXTouch1386: ATMEL_Backup failed\n");
+	return n;
+}
+
+static ssize_t filter_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
+{
+	u8 filter[14] = {0};
+	if (mxt_read_block(mxt->client, MTouchOBJInf16, 14, filter) < 0)
+		return sprintf(buf, "fail\n");
+	return sprintf(buf, "filter1: 0x%x\nfilter2: 0x%x\nfilter3: 0x%x\n", filter[11], filter[12], filter[13]);
+}
+
+static ssize_t filter_store(struct kobject *kobj, struct kobj_attribute *attr, const char * buf, size_t n)
+{
+	int XT9_DECISION = myatoi(buf);
+	u8 filter_value[3] = {0};
+	u16 addr;
+
+	CalculateAddr16bits(MTouchOBJInf[2], MTouchOBJInf[1], &addr, 11);
+
+	if(XT9_DECISION){
+		filter_value[0] = 0;
+		filter_value[1] = 1;
+		filter_value[2] = 78;
+		if(mxt_write_block(mxt->client, addr, 3, filter_value) < 0)
+			mxt_debug(DEBUG_ERROR, "filter_store fail\n");
+	} else {
+		filter_value[0] = 5;
+		filter_value[1] = 5;
+		filter_value[2] = 32;
+		if(mxt_write_block(mxt->client, addr, 3, filter_value) < 0)
+			mxt_debug(DEBUG_ERROR, "filter_store fail\n");
+	}
+	return n;
+}
+
 static ssize_t FirmwareVersion_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
 {
 	char *s = buf;
@@ -734,6 +787,8 @@ debug_attr(lbyte);
 debug_attr(rlen);
 debug_attr(val);
 debug_attr(debugmsg);
+debug_attr(sensitivity);
+debug_attr(filter);
 
 static struct attribute * g[] = {
 	&hbyte_attr.attr,
@@ -741,6 +796,8 @@ static struct attribute * g[] = {
 	&rlen_attr.attr,
 	&val_attr.attr,
 	&debugmsg_attr.attr,
+	&sensitivity_attr.attr,
+	&filter_attr.attr,
 	&FirmwareVersion_attr.attr,
 	NULL,
 };
@@ -1172,7 +1229,8 @@ static int ATMEL_SyncWithThreadToReadMsg(struct mxt_data *mxt, int boot)
 	if(boot) {
 		mxt_debug(DEBUG_DETAIL, "maXTouch1386: boot request_irq\n");
 
-		down_interruptible(&mxt->sema);
+		if(down_interruptible(&mxt->sema))
+			return -1;
 		error = request_irq(mxt->irq,
 				mxt_irq_handler,
 				IRQF_ONESHOT | IRQF_TRIGGER_LOW,
@@ -1201,7 +1259,8 @@ static int ATMEL_SyncWithThreadToReadMsg(struct mxt_data *mxt, int boot)
 	}
 
 	mxt_debug(DEBUG_DETAIL, "PowerOnRead_noaddr before 2nd sema\n");
-	down_interruptible(&mxt->sema);
+	if(down_interruptible(&mxt->sema))
+		return -1;
 	if(i2cfail_real == 1)
 		return -1;
 	return 0;
@@ -1291,6 +1350,10 @@ static int ATMEL_CheckConfig(struct mxt_data *mxt)
 
 static int ATMEL_Initial(struct mxt_data *mxt)
 {
+	u8 sens_buf[8] = {0};
+	u8 sens_val[1];
+	u16 sens_addr;
+
 	mxt->irq_type = ATMEL_ReadResponseMsg_Noaddress;
 	if (ATMEL_SyncWithThreadToReadMsg(mxt,1) < 0) {
 		mxt_debug(DEBUG_ERROR, "maXTouch1386: ATMEL_SyncWithThreadToReadMsg failed\n");
@@ -1308,6 +1371,11 @@ static int ATMEL_Initial(struct mxt_data *mxt)
 			mxt_debug(DEBUG_ERROR, "maXTouch1386: ATMEL_CheckOBJTableCRC failed\n");
 			return -1;
 		}
+		/* Read the sensitivity value */
+		if (mxt_read_block(mxt->client, MTouchOBJInf16, 8, sens_buf) < 0)
+			mxt_debug(DEBUG_ERROR, "Read Multiple Touch fail\n");
+		sens_val[0] = sens_buf[7];
+		mxt_debug(DEBUG_DETAIL, "sensitivity value: 0x%x\n",sens_buf[7]);
 
 		do {
 			if (ATMEL_ConfigErrRecovery(mxt) < 0) {
@@ -1325,6 +1393,11 @@ static int ATMEL_Initial(struct mxt_data *mxt)
 			mxt_debug(DEBUG_ERROR, "maXTouch1386: ATMEL_CheckOBJTableCRC failed\n");
 			return -1;
 		}
+		/* Read the sensitivity value */
+		if (mxt_read_block(mxt->client, MTouchOBJInf16, 8, sens_buf) < 0)
+			mxt_debug(DEBUG_ERROR, "Read Multiple Touch fail\n");
+		sens_val[0] = sens_buf[7];
+		mxt_debug(DEBUG_DETAIL, "sensitivity value: 0x%x\n",sens_buf[7]);
 	}
 
 	/* reserve this for write config to rom in the future */
@@ -1332,6 +1405,13 @@ static int ATMEL_Initial(struct mxt_data *mxt)
 		mxt_debug(DEBUG_ERROR, "maXTouch1386: ATMEL_CheckConfig failed\n");
 		return -1;
 	}
+
+	/* Write the sensitivity value that the same as the AP */
+	CalculateAddr16bits(MTouchOBJInf[2], MTouchOBJInf[1], &sens_addr, 7);
+	if(mxt_write_block(mxt->client, sens_addr, 1, sens_val) < 0)
+		mxt_debug(DEBUG_ERROR, "Write Multiple Touch fail\n");
+	if (ATMEL_Backup(mxt) < 0)
+		mxt_debug(DEBUG_ERROR, "maXTouch1386: ATMEL_Backup failed\n");
 
 	mxt->irq_type = ATMEL_HandleTouchMsg;
 
@@ -1490,7 +1570,6 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 
 	/* SYSFS_START */
-
 	touchdebug_kobj = kobject_create_and_add("Touch", NULL);
 	if (touchdebug_kobj == NULL)
 		mxt_debug(DEBUG_ERROR, "%s: subsystem_register failed\n", __FUNCTION__);
@@ -1507,7 +1586,6 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	mxt->early_suspend.resume = mxt_late_resume;
 	register_early_suspend(&mxt->early_suspend);
 #endif
-
 	return 0;
 
 err_irq:
