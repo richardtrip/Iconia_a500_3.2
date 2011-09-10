@@ -72,7 +72,11 @@ extern void empty_gpio_init(void);
 #endif
 
 extern void SysShutdown(void);
+
+unsigned long g_sku_id;
+
 extern unsigned int total_ram_size ;
+extern char acer_brand[20];
 
 static struct usb_mass_storage_platform_data tegra_usb_fsg_platform = {
 	.vendor = "NVIDIA",
@@ -242,12 +246,14 @@ static __initdata struct tegra_clk_init_table ventana_clk_init_table[] = {
 	{ "pwm",	"clk_m",	12000000,	false},
 	{ "pll_a",	NULL,		56448000,	false},
 	{ "pll_a_out0",	NULL,		11289600,	false},
+	{ "clk_dev1",	"pll_a_out0",	0,		true},
 	{ "i2s1",	"pll_a_out0",	11289600,	false},
 	{ "i2s2",	"pll_a_out0",	11289600,	false},
 	{ "audio",	"pll_a_out0",	11289600,	false},
 	{ "audio_2x",	"audio",	22579200,	false},
 	{ "spdif_out",	"pll_a_out0",	5644800,	false},
 	{ "kbc",	"clk_32k",	32768,		true},
+	{ "vde",	"pll_m",	240000000,	false},
 	{ NULL,		NULL,		0,		0},
 };
 
@@ -272,24 +278,33 @@ static __initdata struct tegra_clk_init_table ventana_clk_init_table[] = {
 #define USB_PID_VG_3G_RNDIS_ADB	0x334C
 #define USB_PID_VG_3G_RNDIS		0x334D
 
+#define USB_PID_PICA_WIFI_ACC_ADB	USB_ACCESSORY_ADB_PRODUCT_ID
+#define USB_PID_PICA_WIFI_ACC		USB_ACCESSORY_PRODUCT_ID
+#define USB_PID_PICA_3G_ACC_ADB	USB_ACCESSORY_ADB_PRODUCT_ID
+#define USB_PID_PICA_3G_ACC		USB_ACCESSORY_PRODUCT_ID
+#define USB_PID_VG_WIFI_ACC_ADB	USB_ACCESSORY_ADB_PRODUCT_ID
+#define USB_PID_VG_WIFI_ACC		USB_ACCESSORY_PRODUCT_ID
+#define USB_PID_VG_3G_ACC_ADB		USB_ACCESSORY_ADB_PRODUCT_ID
+#define USB_PID_VG_3G_ACC		USB_ACCESSORY_PRODUCT_ID
+
 #define USB_VENDOR_ID			0x0502
 
 static char *usb_functions_mtp[] = { "mtp"};
 static char *usb_functions_mtp_adb[] = { "mtp", "adb"};
-#ifdef CONFIG_USB_ANDROID_ACCESSORY
-static char *usb_functions_accessory[] = { "accessory" };
-static char *usb_functions_accessory_adb[] = { "accessory", "adb" };
-#endif
 #ifdef CONFIG_USB_ANDROID_RNDIS
 static char *usb_functions_rndis[] = { "rndis" };
 static char *usb_functions_rndis_adb[] = { "rndis", "adb" };
 #endif
-static char *usb_functions_all[] = {
 #ifdef CONFIG_USB_ANDROID_ACCESSORY
-	"accessory",
+static char *usb_functions_accessory[] = { "accessory"};
+static char *usb_functions_accessory_adb[] = { "accessory", "adb"};
 #endif
+static char *usb_functions_all[] = {
 #ifdef CONFIG_USB_ANDROID_RNDIS
 	"rndis",
+#endif
+#ifdef CONFIG_USB_ANDROID_ACCESSORY
+	"accessory",
 #endif
 #ifdef CONFIG_USB_ANDROID_MTP
 	"mtp",
@@ -308,20 +323,6 @@ static struct android_usb_product usb_products[] = {
 		.num_functions  = ARRAY_SIZE(usb_functions_mtp_adb),
 		.functions      = usb_functions_mtp_adb,
 	},
-#ifdef CONFIG_USB_ANDROID_ACCESSORY
-	{
-		.vendor_id      = USB_ACCESSORY_VENDOR_ID,
-		.product_id     = USB_ACCESSORY_PRODUCT_ID,
-		.num_functions  = ARRAY_SIZE(usb_functions_accessory),
-		.functions      = usb_functions_accessory,
-	},
-	{
-		.vendor_id      = USB_ACCESSORY_VENDOR_ID,
-		.product_id     = USB_ACCESSORY_ADB_PRODUCT_ID,
-		.num_functions  = ARRAY_SIZE(usb_functions_accessory_adb),
-		.functions      = usb_functions_accessory_adb,
-	},
-#endif
 #ifdef CONFIG_USB_ANDROID_RNDIS
 	{
 		.product_id     = USB_PID_PICA_3G_RNDIS,
@@ -332,6 +333,20 @@ static struct android_usb_product usb_products[] = {
 		.product_id     = USB_PID_PICA_3G_RNDIS_ADB,
 		.num_functions  = ARRAY_SIZE(usb_functions_rndis_adb),
 		.functions      = usb_functions_rndis_adb,
+	},
+#endif
+#ifdef CONFIG_USB_ANDROID_ACCESSORY
+	{
+		.vendor_id      = USB_ACCESSORY_VENDOR_ID,
+		.product_id     = USB_PID_PICA_WIFI_ACC,
+		.num_functions  = ARRAY_SIZE(usb_functions_accessory),
+		.functions      = usb_functions_accessory,
+	},
+	{
+		.vendor_id      = USB_ACCESSORY_VENDOR_ID,
+		.product_id     = USB_PID_PICA_WIFI_ACC_ADB,
+		.num_functions  = ARRAY_SIZE(usb_functions_accessory_adb),
+		.functions      = usb_functions_accessory_adb,
 	},
 #endif
 };
@@ -711,6 +726,34 @@ static struct platform_device rotationlock_switch = {
 };
 #endif
 
+#ifdef CONFIG_PSENSOR
+static struct gpio_switch_platform_data psensor_switch_platform_data = {
+	.gpio = TEGRA_GPIO_PC1,
+};
+
+static struct platform_device psensor_switch = {
+	.name   = "psensor",
+	.id     = -1,
+	.dev    = {
+		.platform_data  = &psensor_switch_platform_data,
+	},
+};
+#endif
+
+#ifdef CONFIG_SIMDETECT
+static struct gpio_switch_platform_data simdetect_switch_platform_data = {
+        .gpio = TEGRA_GPIO_PI7,
+};
+
+static struct platform_device picasso_simdetect_switch = {
+        .name   = "simdetect",
+        .id     = -1,
+        .dev    = {
+                .platform_data  = &simdetect_switch_platform_data,
+        },
+};
+#endif
+
 #ifdef CONFIG_ANDROID_TIMED_GPIO
 static struct timed_gpio picasso_timed_gpios[] = {
         {
@@ -777,6 +820,9 @@ static struct platform_device *ventana_devices[] __initdata = {
 	&tegra_i2s_device2,
 #ifdef CONFIG_ROTATELOCK
 	&rotationlock_switch,
+#endif
+#ifdef CONFIG_PSENSOR
+	&psensor_switch,
 #endif
 	&tegra_spdif_device,
 	&tegra_avp_device,
@@ -901,6 +947,56 @@ static void __init ventana_power_off_init(void)
 	pm_power_off = SysShutdown;
 }
 
+#define AHB_ARBITRATION_DISABLE	0x0
+#define USB_ENB			(1 << 6)
+#define USB2_ENB			(1 << 18)
+#define USB3_ENB			(1 << 17)
+
+#define AHB_ARBITRATION_PRIORITY_CTRL	0x4
+#define AHB_PRIORITY_WEIGHT(x)		(((x) & 0x7) << 29)
+#define PRIORITY_SELEECT_USB		(1 << 6)
+#define PRIORITY_SELEECT_USB2		(1 << 18)
+#define PRIORITY_SELEECT_USB3		(1 << 17)
+
+#define AHB_GIZMO_AHB_MEM		0xc
+#define ENB_FAST_REARBITRATE		(1 << 2)
+#define DONT_SPLIT_AHB_WR		(1 << 7)
+
+#define AHB_GIZMO_APB_DMA		0x10
+
+#define AHB_GIZMO_USB			0x1c
+#define AHB_GIZMO_USB2			0x78
+#define AHB_GIZMO_USB3			0x7c
+#define IMMEDIATE			(1 << 18)
+#define MAX_AHB_BURSTSIZE(x)		(((x) & 0x3) << 16)
+#define DMA_BURST_1WORDS		MAX_AHB_BURSTSIZE(0)
+#define DMA_BURST_4WORDS		MAX_AHB_BURSTSIZE(1)
+#define DMA_BURST_8WORDS		MAX_AHB_BURSTSIZE(2)
+#define DMA_BURST_16WORDS		MAX_AHB_BURSTSIZE(3)
+
+#define AHB_MEM_PREFETCH_CFG3		0xe0
+#define AHB_MEM_PREFETCH_CFG4		0xe4
+#define AHB_MEM_PREFETCH_CFG1		0xec
+#define AHB_MEM_PREFETCH_CFG2		0xf0
+#define PREFETCH_ENB			(1 << 31)
+#define MST_ID(x)			(((x) & 0x1f) << 26)
+#define USB_MST_ID			MST_ID(6)
+#define USB2_MST_ID			MST_ID(18)
+#define USB3_MST_ID			MST_ID(17)
+#define ADDR_BNDRY(x)			(((x) & 0xf) << 21)
+#define INACTIVITY_TIMEOUT(x)		(((x) & 0xffff) << 0)
+
+
+static inline unsigned long gizmo_readl(unsigned long offset)
+{
+	return readl(IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
+}
+
+static inline void gizmo_writel(unsigned long value, unsigned long offset)
+{
+	writel(value, IO_TO_VIRT(TEGRA_AHB_GIZMO_BASE + offset));
+}
+
 #define SERIAL_NUMBER_LENGTH 20
 static char usb_serial_num[SERIAL_NUMBER_LENGTH];
 static void ventana_usb_init(void)
@@ -908,13 +1004,48 @@ static void ventana_usb_init(void)
 	char *src = NULL;
 	int i;
 
+	unsigned long val;
+
 	tegra_usb_phy_init(tegra_usb_phy_pdata, ARRAY_SIZE(tegra_usb_phy_pdata));
+	/*enable USB1/USB2 prefetch engine*/
+	val = gizmo_readl(AHB_GIZMO_AHB_MEM);
+	val |= ENB_FAST_REARBITRATE | IMMEDIATE | DONT_SPLIT_AHB_WR;
+	gizmo_writel(val, AHB_GIZMO_AHB_MEM);
+
+	val = gizmo_readl(AHB_GIZMO_USB);
+	val |= IMMEDIATE;
+	gizmo_writel(val, AHB_GIZMO_USB);
+
+	val = gizmo_readl(AHB_GIZMO_USB2);
+	val |= IMMEDIATE;
+	gizmo_writel(val, AHB_GIZMO_USB2);
+
+	val = gizmo_readl(AHB_ARBITRATION_PRIORITY_CTRL);
+	val |= PRIORITY_SELEECT_USB | PRIORITY_SELEECT_USB2 | AHB_PRIORITY_WEIGHT(7);
+	gizmo_writel(val, AHB_ARBITRATION_PRIORITY_CTRL);
+
+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG1);
+	val &= ~MST_ID(~0);
+	val |= PREFETCH_ENB | MST_ID(5) | ADDR_BNDRY(0xc) | INACTIVITY_TIMEOUT(0x1000);
+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG1);
+
+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG2);
+	val &= ~MST_ID(~0);
+	val |= PREFETCH_ENB | USB_MST_ID | ADDR_BNDRY(0xc) | INACTIVITY_TIMEOUT(0x1000);
+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG2);
+
+	val = gizmo_readl(AHB_MEM_PREFETCH_CFG3);
+	val &= ~MST_ID(~0);
+	val |= PREFETCH_ENB | USB2_MST_ID | ADDR_BNDRY(0xc) | INACTIVITY_TIMEOUT(0x1000);
+	gizmo_writel(val, AHB_MEM_PREFETCH_CFG3);
 
 	tegra_otg_device.dev.platform_data = &tegra_otg_pdata;
 	platform_device_register(&tegra_otg_device);
 
+#if !defined(CONFIG_MACH_ACER_VANGOGH)
 	tegra_ehci3_device.dev.platform_data=&tegra_ehci_pdata[2];
 	platform_device_register(&tegra_ehci3_device);
+#endif
 
 #ifdef CONFIG_USB_ANDROID_RNDIS
 	src = usb_serial_num;
@@ -998,6 +1129,10 @@ static void __init tegra_ventana_init(void)
 		andusb_plat.products[1].product_id = USB_PID_PICA_3G_MTP_ADB;
 		andusb_plat.products[2].product_id = USB_PID_PICA_3G_RNDIS;
 		andusb_plat.products[3].product_id = USB_PID_PICA_3G_RNDIS_ADB;
+#ifdef CONFIG_USB_ANDROID_ACCESSORY
+		andusb_plat.products[4].product_id = USB_PID_PICA_3G_ACC;
+		andusb_plat.products[5].product_id = USB_PID_PICA_3G_ACC_ADB;
+#endif
 		andusb_plat.product_name = kstrdup(USB_PRODUCT_NAME_PICA_3G, GFP_KERNEL);
 	}
 #elif defined(CONFIG_MACH_ACER_VANGOGH)
@@ -1005,6 +1140,10 @@ static void __init tegra_ventana_init(void)
 		andusb_plat.product_id = USB_PID_VG_WIFI_MTP_ADB;
 		andusb_plat.products[0].product_id = USB_PID_VG_WIFI_MTP;
 		andusb_plat.products[1].product_id = USB_PID_VG_WIFI_MTP_ADB;
+#ifdef CONFIG_USB_ANDROID_ACCESSORY
+		andusb_plat.products[2].product_id = USB_PID_VG_WIFI_ACC;
+		andusb_plat.products[3].product_id = USB_PID_VG_WIFI_ACC_ADB;
+#endif
 		andusb_plat.product_name = kstrdup(USB_PRODUCT_NAME_VG_WIFI, GFP_KERNEL);
 	}else{
 		andusb_plat.product_id = USB_PID_VG_3G_MTP_ADB;
@@ -1012,6 +1151,10 @@ static void __init tegra_ventana_init(void)
 		andusb_plat.products[1].product_id = USB_PID_VG_3G_MTP_ADB;
 		andusb_plat.products[2].product_id = USB_PID_VG_3G_RNDIS;
 		andusb_plat.products[3].product_id = USB_PID_VG_3G_RNDIS_ADB;
+#ifdef CONFIG_USB_ANDROID_ACCESSORY
+		andusb_plat.products[4].product_id = USB_PID_VG_3G_ACC;
+		andusb_plat.products[5].product_id = USB_PID_VG_3G_ACC_ADB;
+#endif
 		andusb_plat.product_name = kstrdup(USB_PRODUCT_NAME_VG_3G, GFP_KERNEL);
 	}
 #endif
@@ -1039,6 +1182,33 @@ static void __init tegra_ventana_init(void)
 
 	ventana_wired_jack_init();
 	ventana_usb_init();
+
+#if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA)
+	g_sku_id = get_sku_id();
+	pr_info("g_sku_id=%d (sku_id_5 does not mount USB.2 PHY)", (int)g_sku_id);
+
+	if(g_sku_id!=5 ){
+		/*3G sku, do ehci2 init, simdetect*/
+		platform_device_register(&tegra_ehci2_device);
+#ifdef CONFIG_SIMDETECT
+		platform_device_register(&picasso_simdetect_switch);
+#endif
+	}else{
+		/*WIFI sku does not mount PHY, we do not init ehci2 for WIFI sku*/
+	}
+#endif
+
+// Compal, Vangogh enable ehci interface for 3G sku (factory)
+#ifdef CONFIG_MACH_ACER_VANGOGH
+	g_sku_id = get_sku_id();
+	if(g_sku_id!=0 ){
+		platform_device_register(&tegra_ehci2_device);
+#ifdef CONFIG_SIMDETECT
+		platform_device_register(&picasso_simdetect_switch);
+#endif
+	}
+#endif
+
 	ventana_gps_init();
 	ventana_panel_init();
 	ventana_sensors_init();
@@ -1053,6 +1223,14 @@ static void __init tegra_ventana_init(void)
 #endif
 #ifdef CONFIG_ROTATELOCK
 	tegra_gpio_enable(TEGRA_GPIO_PQ2);
+#endif
+#ifdef CONFIG_PSENSOR
+	// enable gpio for psensor
+	tegra_gpio_enable(TEGRA_GPIO_PC1);
+#endif
+#ifdef CONFIG_SIMDETECT
+        // enable gpio for sim detection
+        tegra_gpio_enable(TEGRA_GPIO_PI7);
 #endif
 #ifdef CONFIG_DOCK
 	tegra_gpio_enable(TEGRA_GPIO_PX6);
