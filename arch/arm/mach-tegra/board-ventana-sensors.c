@@ -576,12 +576,12 @@ static void ventana_nct1008_init(void)
 static struct nct1008_platform_data ventana_nct1008_pdata = {
 	.supported_hwrev = true,
 	.ext_range = false,
-	.conv_rate = 0x04,
+	.conv_rate = 0x08,
 	.offset = 0,
 	.hysteresis = 0,
 	.shutdown_ext_limit = 85,
 	.shutdown_local_limit = 90,
-	.throttling_ext_limit = 65,
+	.throttling_ext_limit = 75,
 	.alarm_fn = tegra_throttling_enable,
 };
 
