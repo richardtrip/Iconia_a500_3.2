@@ -19,16 +19,12 @@
 #include <linux/gpio.h>
 #include <sound/soc-dapm.h>
 #include <linux/regulator/consumer.h>
-#include <linux/sysfs.h>
 #include "../codecs/wm8903.h"
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
 #include "tegra_wired_jack.h"
 #endif
 
 static struct platform_device *tegra_snd_device;
-
-static struct regulator *reg_vmic = NULL;
-extern int en_dmic;
 
 extern struct snd_soc_dai tegra_i2s_dai[];
 extern struct snd_soc_dai tegra_spdif_dai;
@@ -54,86 +50,8 @@ extern struct wired_jack_conf tegra_wired_jack_conf;
 #define B04_ADC_HPF_ENA		4
 #define R20_SIDETONE_CTRL	32
 #define R29_DRC_1		41
-
-#define B08_GPx_FN		8
-#define B07_GPx_DIR		7
-
-#define DMIC_CLK_OUT		(0x6 << B08_GPx_FN)
-#define DMIC_DAT_DATA_IN	(0x6 << B08_GPx_FN)
-#define GPIO_DIR_OUT		(0x0 << B07_GPx_DIR)
-#define GPIO_DIR_IN			(0x1 << B07_GPx_DIR)
-
-#define ADC_DIGITAL_VOL_9DB		0x1D8
-#define ADC_DIGITAL_VOL_12DB		0x1E0
-#define ADC_DIGITAL_VOL_17_625_DB      0x1FF
-#define ADC_ANALOG_VOLUME		0x1C
-#define DRC_MAX_36DB			0x03
-
 #define SET_REG_VAL(r,m,l,v) (((r)&(~((m)<<(l))))|(((v)&(m))<<(l)))
 
-#ifdef MACH_ACER_AUDIO
-static void hp_enable(struct snd_soc_codec *codec, int enable);
-#endif
-
-static ssize_t digital_mic_show(struct device *dev,
-				struct device_attribute *attr,
-				char *buf)
-{
-	return sprintf(buf, "%d\n", en_dmic);
-}
-
-static ssize_t digital_mic_store(struct device *dev,
-				struct device_attribute *attr,
-				const char *buf, size_t count)
-{
-	if (count > 3) {
-		pr_err("%s: buffer size %d too big\n", __func__, count);
-		return -EINVAL;
-	}
-
-	if (sscanf(buf, "%d", &en_dmic) != 1) {
-		pr_err("%s: invalid input string [%s]\n", __func__, buf);
-		return -EINVAL;
-	}
-	return count;
-}
-
-static DEVICE_ATTR(enable_digital_mic, 0644, digital_mic_show, digital_mic_store);
-
-static void configure_dmic(struct snd_soc_codec *codec)
-{
-	u16 test4, reg;
-
-	if (en_dmic) {
-		/* Set GP1_FN as DMIC_LR */
-		snd_soc_write(codec, WM8903_GPIO_CONTROL_1,
-					DMIC_CLK_OUT | GPIO_DIR_OUT);
-
-		/* Set GP2_FN as DMIC_DAT */
-		snd_soc_write(codec, WM8903_GPIO_CONTROL_2,
-					DMIC_DAT_DATA_IN | GPIO_DIR_IN);
-
-		/* Enable ADC Digital volumes */
-		snd_soc_write(codec, WM8903_ADC_DIGITAL_VOLUME_LEFT,
-					ADC_DIGITAL_VOL_17_625_DB);
-		snd_soc_write(codec, WM8903_ADC_DIGITAL_VOLUME_RIGHT,
-					ADC_DIGITAL_VOL_17_625_DB);
-
-		/* Enable DIG_MIC */
-		test4 = WM8903_ADC_DIG_MIC;
-	} else {
-		/* Disable DIG_MIC */
-		test4 = snd_soc_read(codec, WM8903_CLOCK_RATE_TEST_4);
-		test4 &= ~WM8903_ADC_DIG_MIC;
-	}
-
-	reg = snd_soc_read(codec, WM8903_CONTROL_INTERFACE_TEST_1);
-	snd_soc_write(codec, WM8903_CONTROL_INTERFACE_TEST_1,
-			 reg | WM8903_TEST_KEY);
-	snd_soc_write(codec, WM8903_CLOCK_RATE_TEST_4, test4);
-	snd_soc_write(codec, WM8903_CONTROL_INTERFACE_TEST_1, reg);
-
-}
 
 static int tegra_hifi_hw_params(struct snd_pcm_substream *substream,
 					struct snd_pcm_hw_params *params)
@@ -210,15 +128,6 @@ static int tegra_hifi_hw_params(struct snd_pcm_substream *substream,
 				(0x0<<B00_MODE) | (0x0<<B04_IP_SEL_N)
 				| (0x1<<B02_IP_SEL_P);
 		}
-#elif defined(CONFIG_MACH_ACER_VANGOGH)
-		if (wired_jack_state() == 1) {
-			select_mic_input(1);
-		} else {
-			select_mic_input(2);
-		}
-		CtrlReg = (0x0<<B06_IN_CM_ENA) |
-			(0x0<<B00_MODE) | (0x0<<B04_IP_SEL_N)
-					| (0x1<<B02_IP_SEL_P);
 #else
 		CtrlReg = (0x0<<B06_IN_CM_ENA) |
 			(0x0<<B00_MODE) | (0x0<<B04_IP_SEL_N)
@@ -238,7 +147,7 @@ static int tegra_hifi_hw_params(struct snd_pcm_substream *substream,
 				VolumeCtrlReg);
 		snd_soc_write(codec, WM8903_ANALOGUE_RIGHT_INPUT_0,
 				VolumeCtrlReg);
-		/* Left ADC data on both channels */
+		/* replicate mic setting on both channels */
 		CtrlReg = snd_soc_read(codec, WM8903_AUDIO_INTERFACE_0);
 		CtrlReg  = SET_REG_VAL(CtrlReg, 0x1, B06_AIF_ADCR, 0x0);
 		CtrlReg  = SET_REG_VAL(CtrlReg, 0x1, B06_AIF_ADCL, 0x0);
@@ -246,31 +155,30 @@ static int tegra_hifi_hw_params(struct snd_pcm_substream *substream,
 		/* Enable analog inputs */
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
 		if (audio_data->isMicMuted)
-			CtrlReg = (0x0<<B01_INL_ENA);
+			CtrlReg = (0x0<<B01_INL_ENA) | (0x0<<B00_INR_ENA);
 		else
-			CtrlReg = (0x1<<B01_INL_ENA);
+			CtrlReg = (0x1<<B01_INL_ENA) | (0x1<<B00_INR_ENA);
 #else
-		CtrlReg = (0x1<<B01_INL_ENA);
+		CtrlReg = (0x1<<B01_INL_ENA) | (0x1<<B00_INR_ENA);
 #endif
 		snd_soc_write(codec, WM8903_POWER_MANAGEMENT_0, CtrlReg);
 		/* ADC Settings */
 		CtrlReg = snd_soc_read(codec, WM8903_ADC_DIGITAL_0);
 		CtrlReg |= (0x1<<B04_ADC_HPF_ENA);
 		snd_soc_write(codec, WM8903_ADC_DIGITAL_0, CtrlReg);
-		/* Disable sidetone */
-		CtrlReg = 0;
-		snd_soc_write(codec, R20_SIDETONE_CTRL, CtrlReg);
+		SidetoneCtrlReg = 0;
+		snd_soc_write(codec, R20_SIDETONE_CTRL, SidetoneCtrlReg);
 		/* Enable ADC */
 		CtrlReg = snd_soc_read(codec, WM8903_POWER_MANAGEMENT_6);
-		CtrlReg |= (0x1<<B01_ADCL_ENA);
+		CtrlReg |= (0x1<<B00_ADCR_ENA)|(0x1<<B01_ADCL_ENA);
 		snd_soc_write(codec, WM8903_POWER_MANAGEMENT_6, CtrlReg);
 		CtrlReg = snd_soc_read(codec, R29_DRC_1);
 		CtrlReg |= 0x3; /*mic volume 18 db */
 		snd_soc_write(codec, R29_DRC_1, CtrlReg);
-
-		configure_dmic(codec);
-
 	}
+
+	snd_soc_write(codec, WM8903_ANALOGUE_OUT1_LEFT, 0xB8);
+	snd_soc_write(codec, WM8903_ANALOGUE_OUT1_RIGHT, 0xB8);
 
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA)
 	snd_soc_write(codec, WM8903_ANALOGUE_OUT2_LEFT, 0xB7);
@@ -347,31 +255,16 @@ int tegra_codec_startup(struct snd_pcm_substream *substream)
 {
 	tegra_das_power_mode(true);
 
-	if ((SNDRV_PCM_STREAM_CAPTURE == substream->stream) && en_dmic) {
-		/* enable d-mic */
-		if (reg_vmic) {
-			regulator_enable(reg_vmic);
-		}
-	}
-
 	return 0;
 }
 
 void tegra_codec_shutdown(struct snd_pcm_substream *substream)
 {
 	tegra_das_power_mode(false);
-
-	if ((SNDRV_PCM_STREAM_CAPTURE == substream->stream) && en_dmic) {
-		/* disable d-mic */
-		if (reg_vmic) {
-			regulator_disable(reg_vmic);
-		}
-	}
 }
 
 int tegra_soc_suspend_pre(struct platform_device *pdev, pm_message_t state)
 {
-	tegra_jack_suspend();
 	return 0;
 }
 
@@ -397,7 +290,6 @@ int tegra_soc_resume_pre(struct platform_device *pdev)
 
 int tegra_soc_resume_post(struct platform_device *pdev)
 {
-	tegra_jack_resume();
 	return 0;
 }
 
@@ -416,21 +308,6 @@ static struct snd_soc_ops tegra_voice_ops = {
 static struct snd_soc_ops tegra_spdif_ops = {
 	.hw_params = tegra_spdif_hw_params,
 };
-
-#ifdef MACH_ACER_AUDIO
-static void hp_enable(struct snd_soc_codec *codec, int enable)
-{
-	if (enable) {
-		snd_soc_write(codec, WM8903_ANALOGUE_OUT1_LEFT, 0xB8);
-		snd_soc_write(codec, WM8903_ANALOGUE_OUT1_RIGHT, 0xB8);
-		pr_info("[Audio] Headphone Unmute");
-	} else {
-		snd_soc_write(codec, WM8903_ANALOGUE_OUT1_LEFT, 0x1B8);
-		snd_soc_write(codec, WM8903_ANALOGUE_OUT1_RIGHT, 0x1B8);
-		pr_info("[Audio] Headphone Mute");
-	}
-}
-#endif
 
 void tegra_ext_control(struct snd_soc_codec *codec, int new_con)
 {
@@ -477,15 +354,10 @@ void tegra_ext_control(struct snd_soc_codec *codec, int new_con)
 	else
 		snd_soc_dapm_disable_pin(codec, "Linein");
 
-	if (new_con & TEGRA_HEADSET_OUT)
-		snd_soc_dapm_enable_pin(codec, "Headset Out");
+	if (new_con & TEGRA_HEADSET)
+		snd_soc_dapm_enable_pin(codec, "Headset");
 	else
-		snd_soc_dapm_disable_pin(codec, "Headset Out");
-
-	if (new_con & TEGRA_HEADSET_IN)
-		snd_soc_dapm_enable_pin(codec, "Headset In");
-	else
-		snd_soc_dapm_disable_pin(codec, "Headset In");
+		snd_soc_dapm_disable_pin(codec, "Headset");
 
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
 	if (new_con & TEGRA_MIC_MUTE) {
@@ -499,11 +371,6 @@ void tegra_ext_control(struct snd_soc_codec *codec, int new_con)
 		snd_soc_write(codec, WM8903_ANALOGUE_LEFT_INPUT_0, CtrlReg);
 		snd_soc_write(codec, WM8903_ANALOGUE_RIGHT_INPUT_0, CtrlReg);
 	}
-
-	if (new_con & (TEGRA_HEADPHONE | TEGRA_HEADSET_OUT))
-		hp_enable(codec, 1);
-	else
-		hp_enable(codec, 0);
 #endif
 
 	/* signal a DAPM event */
@@ -577,8 +444,7 @@ static int tegra_dapm_event_ext_mic(struct snd_soc_dapm_widget* w,
 /*tegra machine dapm widgets */
 static const struct snd_soc_dapm_widget tegra_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone", NULL),
-	SND_SOC_DAPM_HP("Headset Out", NULL),
-	SND_SOC_DAPM_MIC("Headset In", NULL),
+	SND_SOC_DAPM_HP("Headset", NULL),
 	SND_SOC_DAPM_SPK("Lineout", NULL),
 	SND_SOC_DAPM_SPK("Int Spk", tegra_dapm_event_int_spk),
 	SND_SOC_DAPM_MIC("Ext Mic", tegra_dapm_event_ext_mic),
@@ -594,12 +460,14 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"Headphone", NULL, "HPOUTL"},
 
 	/* headset Jack  - in = micin, out = HPOUT*/
-	{"Headset Out", NULL, "HPOUTR"},
-	{"Headset Out", NULL, "HPOUTL"},
+	{"Headset", NULL, "HPOUTR"},
+	{"Headset", NULL, "HPOUTL"},
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
-	{"IN2L", NULL, "Headset In"},
+	{"IN2L", NULL, "Headset"},
+	{"IN2R", NULL, "Headset"},
 #else
-	{"IN1L", NULL, "Headset In"},
+	{"IN1L", NULL, "Headset"},
+	{"IN1R", NULL, "Headset"},
 #endif
 
 	/* lineout connected to LINEOUTR and LINEOUTL */
@@ -616,7 +484,7 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"IN1L", NULL, "Int Mic"},
 	{"IN1R", NULL, "Int Mic"},
 
-	/* external mic is stereo */
+	/* external mic is stero */
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
 	{"IN2L", NULL, "Ext Mic"},
 	{"IN2R", NULL, "Ext Mic"},
@@ -643,6 +511,7 @@ static int tegra_codec_init(struct snd_soc_codec *codec)
 			err = -ENODEV;
 			return err;
 		}
+		clk_enable(audio_data->dap_mclk);
 
 		/* Add tegra specific widgets */
 		snd_soc_dapm_new_controls(codec, tegra_dapm_widgets,
@@ -746,21 +615,6 @@ static int __init tegra_init(void)
 		goto fail;
 	}
 
-	ret = device_create_file(&tegra_snd_device->dev,
-							&dev_attr_enable_digital_mic);
-	if (ret < 0) {
-		dev_err(&tegra_snd_device->dev,
-				"%s: could not create sysfs entry %s: %d\n",
-				__func__, dev_attr_enable_digital_mic.attr.name, ret);
-		goto fail;
-	}
-
-	reg_vmic = regulator_get(&tegra_snd_device->dev, "vmic");
-	if (IS_ERR_OR_NULL(reg_vmic)) {
-		pr_err("Couldn't get vmic regulator\n");
-		reg_vmic = NULL;
-	}
-
 	return 0;
 
 fail:
@@ -775,10 +629,6 @@ fail:
 static void __exit tegra_exit(void)
 {
 	tegra_jack_exit();
-	if (reg_vmic) {
-		regulator_put(reg_vmic);
-		reg_vmic = NULL;
-	}
 	platform_device_unregister(tegra_snd_device);
 }
 
