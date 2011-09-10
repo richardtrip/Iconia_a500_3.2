@@ -168,21 +168,14 @@ static int wifi_remove(struct platform_device *pdev)
 	up(&wifi_control_sem);
 	return 0;
 }
-
 static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-#if defined(OOB_INTR_ONLY)
-	bcmsdh_oob_intr_set(0);
-#endif /* (OOB_INTR_ONLY) */
 	return 0;
 }
 static int wifi_resume(struct platform_device *pdev)
 {
 	DHD_TRACE(("##> %s\n", __FUNCTION__));
-#if defined(OOB_INTR_ONLY)
-	bcmsdh_oob_intr_set(1);
-#endif /* (OOB_INTR_ONLY) */
 	return 0;
 }
 
@@ -1927,16 +1920,7 @@ dhd_open(struct net_device *net)
 	wl_control_wl_start(net);
 
 	ifidx = dhd_net2idx(dhd, net);
-	if (ifidx < 0)
-	{
-		DHD_ERROR(("%s: Error: invalid ifidx\n", __FUNCTION__));
-		return -1;
-	}
-	
 	DHD_TRACE(("%s: ifidx %d\n", __FUNCTION__, ifidx));
-
-	if (ifidx == DHD_BAD_IF)
-		return -1;
 
 	if ((dhd->iflist[ifidx]) && (dhd->iflist[ifidx]->state == WLC_E_IF_DEL)) {
 		DHD_ERROR(("%s: Error: called when IF already deleted\n", __FUNCTION__));
