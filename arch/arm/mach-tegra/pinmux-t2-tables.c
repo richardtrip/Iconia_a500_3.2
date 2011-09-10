@@ -269,14 +269,8 @@ void tegra_pinmux_resume(void)
 	for (i = 0; i < PULLUPDOWN_REG_NUM; i++)
 		pg_writel(*ctx++, PULLUPDOWN_REG_A + i*4);
 
-	pg_writel((*ctx), TRISTATE_REG_A);
-	ctx++;
-	pg_writel((*ctx | (0x3<<18)), TRISTATE_REG_A + 0x4);
-	ctx++;
-	pg_writel((*ctx), TRISTATE_REG_A + 0x8);
-	ctx++;
-	pg_writel((*ctx | (0x1<<13)), TRISTATE_REG_A + 0xc);
-	ctx++;
+	for (i = 0; i < TRISTATE_REG_NUM; i++)
+		pg_writel(*ctx++, TRISTATE_REG_A + i*4);
 
 	for (i = 0; i < ARRAY_SIZE(tegra_soc_drive_pingroups); i++)
 		pg_writel(*ctx++, tegra_soc_drive_pingroups[i].reg);

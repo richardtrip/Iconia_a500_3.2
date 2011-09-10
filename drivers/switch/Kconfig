@@ -21,11 +21,3 @@ config DOCK
 config ROTATELOCK
 	tristate "RotationLock Switch support"
 	default n
-
-config PSENSOR
-	tristate "P-Sensor Switch support"
-	default n
-
-config SIMDETECT
-        tristate "SIM Hot-plug detection support"
-        default n
