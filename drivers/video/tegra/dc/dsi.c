@@ -78,6 +78,10 @@ struct dsi_status {
 	unsigned	clk_out:2;
 	unsigned	clk_mode:2;
 	unsigned	clk_burst:2;
+
+	unsigned	lp_op:2;
+
+	unsigned	dc_stream:1;
 };
 
 /* source of video data */
@@ -1133,7 +1137,8 @@ static int tegra_dsi_write_data(struct tegra_dc *dc,
 	switch_back_to_dc_mode = false;
 
 	if ((dsi->status.init != DSI_MODULE_INIT) ||
-		(dsi->status.lphs == DSI_LPHS_NOT_INIT)) {
+		(dsi->status.lphs == DSI_LPHS_NOT_INIT) ||
+		(dsi->status.lp_op == DSI_LP_OP_NOT_INIT)) {
 		err = -EPERM;
 		goto fail;
 	}
@@ -1340,7 +1345,7 @@ static int tegra_dsi_read_data(struct tegra_dc *dc,
 
 	if ((dsi->status.init != DSI_MODULE_INIT) ||
 		(dsi->status.lphs == DSI_LPHS_NOT_INIT) ||
-		(dsi->status.driven == DSI_DRIVEN_MODE_NOT_INIT) ||
+		(dsi->status.driven == DSI_DRIVEN_MODE_NOT_INIT)||
 		(dsi->status.lp_op == DSI_LP_OP_NOT_INIT)) {
 		err = -EPERM;
 		goto fail;
