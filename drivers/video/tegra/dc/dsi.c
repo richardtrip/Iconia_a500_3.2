@@ -916,13 +916,46 @@ static void tegra_dsi_set_control_reg_hs(struct tegra_dc_dsi_data *dsi)
 	tegra_dsi_writel(dsi, host_dsi_control, DSI_HOST_DSI_CONTROL);
 }
 
+static void tegra_dsi_pad_caliberation(struct tegra_dc_dsi_data *dsi)
+{
+	u32 val;
+	val =	DSI_PAD_CONTROL_PAD_LPUPADJ(0x1) |
+		DSI_PAD_CONTROL_PAD_LPDNADJ(0x1) |
+		DSI_PAD_CONTROL_PAD_PREEMP_EN(0x1) |
+		DSI_PAD_CONTROL_PAD_SLEWDNADJ(0x6) |
+		DSI_PAD_CONTROL_PAD_SLEWUPADJ(0x6);
+	if (!dsi->ulpm) {
+		val |=	DSI_PAD_CONTROL_PAD_PDIO(0) |
+			DSI_PAD_CONTROL_PAD_PDIO_CLK(0) |
+			DSI_PAD_CONTROL_PAD_PULLDN_ENAB(TEGRA_DSI_DISABLE);
+	tegra_dsi_writel(dsi, val, DSI_PAD_CONTROL);
+
+	val = MIPI_CAL_TERMOSA(0x4);
+	tegra_vi_csi_writel(val, CSI_CILA_MIPI_CAL_CONFIG_0);
+
+	val = MIPI_CAL_TERMOSB(0x4);
+	tegra_vi_csi_writel(val, CSI_CILB_MIPI_CAL_CONFIG_0);
+
+	val = MIPI_CAL_HSPUOSD(0x3) | MIPI_CAL_HSPDOSD(0x4);
+	tegra_vi_csi_writel(val, CSI_DSI_MIPI_CAL_CONFIG);
+
+	val = PAD_DRIV_DN_REF(0x5) | PAD_DRIV_UP_REF(0x7);
+	tegra_vi_csi_writel(val, CSI_MIPIBIAS_PAD_CONFIG);
+}
+
 static int tegra_dsi_init_hw(struct tegra_dc *dc,
 						struct tegra_dc_dsi_data *dsi)
 {
 	u32 val;
 	u32 i;
 
+	val = DSI_POWER_CONTROL_LEG_DSI_ENABLE(TEGRA_DSI_DISABLE);
+	tegra_dsi_writel(dsi, val, DSI_POWER_CONTROL);
+
 	tegra_dsi_set_dsi_clk(dc, dsi, dsi->target_lp_clk_khz);
+	if (dsi->info.dsi_instance) {
+		/* TODO:Set the misc register*/
+	}
 
 	/* TODO: only need to change the timing for bta */
 	tegra_dsi_set_phy_timing(dsi);
@@ -931,16 +964,14 @@ static int tegra_dsi_init_hw(struct tegra_dc *dc,
 		tegra_dsi_stop_dc_stream(dc, dsi);
 
 	/* Initializing DSI registers */
-	for (i = 0; i < ARRAY_SIZE(init_reg); i++) {
+	for (i = 0; i < ARRAY_SIZE(init_reg); i++)
 		tegra_dsi_writel(dsi, 0, init_reg[i]);
-	}
+
 	tegra_dsi_writel(dsi, dsi->dsi_control_val, DSI_CONTROL);
 
-	val = DSI_PAD_CONTROL_PAD_PDIO(0) |
-			DSI_PAD_CONTROL_PAD_PDIO_CLK(0) |
-			DSI_PAD_CONTROL_PAD_PULLDN_ENAB(TEGRA_DSI_DISABLE);
-	tegra_dsi_writel(dsi, val, DSI_PAD_CONTROL);
+	tegra_dsi_pad_caliberation(dsi);
 
+>>>>>>> 4681815... video: tegra: dsi: Refactor code in tegra_dsi_hw_init()
 	val = DSI_POWER_CONTROL_LEG_DSI_ENABLE(TEGRA_DSI_ENABLE);
 	tegra_dsi_writel(dsi, val, DSI_POWER_CONTROL);
 
@@ -1309,7 +1340,8 @@ static int tegra_dsi_read_data(struct tegra_dc *dc,
 
 	if ((dsi->status.init != DSI_MODULE_INIT) ||
 		(dsi->status.lphs == DSI_LPHS_NOT_INIT) ||
-		(dsi->status.driven == DSI_DRIVEN_MODE_NOT_INIT)) {
+		(dsi->status.driven == DSI_DRIVEN_MODE_NOT_INIT) ||
+		(dsi->status.lp_op == DSI_LP_OP_NOT_INIT)) {
 		err = -EPERM;
 		goto fail;
 	}
