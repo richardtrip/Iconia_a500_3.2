@@ -1218,23 +1218,31 @@ static void __init tegra_ventana_init(void)
 	tegra_setup_bluesleep();
 #endif
 #ifdef CONFIG_ANDROID_TIMED_GPIO
-	tegra_gpio_enable(TEGRA_GPIO_PV5);
+        tegra_gpio_enable(TEGRA_GPIO_PV5);
 #endif
+//ddebug - start
+        // [Peter] enable gpio for headphone detection
+        tegra_gpio_enable(TEGRA_GPIO_PW2);
 #ifdef CONFIG_ROTATELOCK
-	tegra_gpio_enable(TEGRA_GPIO_PQ2);
+        // [Peter] enable gpio for rotation lock
+        tegra_gpio_enable(TEGRA_GPIO_PQ2);
 #endif
 #ifdef CONFIG_PSENSOR
-	// enable gpio for psensor
-	tegra_gpio_enable(TEGRA_GPIO_PC1);
+        // enable gpio for psensor
+        tegra_gpio_enable(TEGRA_GPIO_PC1);
 #endif
 #ifdef CONFIG_SIMDETECT
         // enable gpio for sim detection
         tegra_gpio_enable(TEGRA_GPIO_PI7);
 #endif
-#ifdef CONFIG_DOCK
-	tegra_gpio_enable(TEGRA_GPIO_PX6);
+#ifdef CONFIG_DOCK && CONFIG_ACER_DOCK_HS
+        tegra_gpio_enable(TEGRA_GPIO_PX6);
 #endif
-	pr_err("sku_id: %d", get_sku_id());
+	    // [Peter] enable gpio for simcard detection
+        tegra_gpio_enable(TEGRA_GPIO_PI7);
+        // [Peter] enable gpio for p-sensor
+        tegra_gpio_enable(TEGRA_GPIO_PC1);
+//ddebug - end
 }
 
 int __init tegra_ventana_protected_aperture_init(void)
