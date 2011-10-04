@@ -54,6 +54,7 @@ void tegra_lp2_set_trigger(unsigned long cycles);
 unsigned long tegra_lp2_timer_remain(void);
 void __cortex_a9_save(unsigned int mode);
 void __cortex_a9_restore(void);
+void __cortex_a9_l2x0_reenable(void);
 void __shut_off_mmu(void);
 void tegra_lp2_startup(void);
 unsigned int tegra_suspend_lp2(unsigned int us);

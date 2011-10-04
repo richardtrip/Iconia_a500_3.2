@@ -629,6 +629,60 @@ l2_done:
 	b	__cortex_a9_restore
 
 
+/*
+ *	__cortex_a9_l2x0_reenable(void)
+ *
+ *	This reenables L2 after a power event. It is called from
+ *	tegra_suspend_dram (and differs between default and secureos
+ *	environments).
+ *
+ *	In a default build, __cortex_a9_l2x0_restart is able to
+ *	restore all the full L2 config from saved state. Note: at
+ *	the time it was saved the L2X0_CTRL would've been disabled,
+ *	but since all the other state had been restored, calling
+ * 	l2x0_restart is sufficient.
+ *
+ *	In a secureos build, __cortex_a9_l2x0_restart is non-secure
+ *	so it can't restore any registers. Like the default path,
+ *	L2X0_CTRL was saved as disabled (and we can't/don't make
+ *	the SMC to have it reenabled).
+ *
+ *	The problem with just calling l2x0_restart like the default
+ *	build is it doesn't support an update of the AUX_CTRL, so
+ *	would leave it at the POR value. Instead, we make the same
+ *	SMC as l2x0_restart would, but supplying our saved AUX_CTRL.
+ */
+	.align L1_CACHE_SHIFT
+ENTRY(__cortex_a9_l2x0_reenable)
+#ifndef CONFIG_TRUSTED_FOUNDATIONS
+	b	l2x0_restart
+#else
+	/* nothing to do, if already enabled */
+	mov32	r0, (TEGRA_ARM_PL310_BASE-IO_CPU_PHYS+IO_CPU_VIRT)
+	ldr	r1, [r0, #L2X0_CTRL]
+	cmp	r1, #0
+	bne	reenable_done
+
+	stmfd	sp!, {r3-r4}
+
+	ctx_ptr	r4, r3
+	add	r3, r4, #CTX_L2_AUX
+	ldr	r4, [r3]
+
+	ldr r0, =0xFFFFF100
+	mov r1, #1		@ restart opcode
+	mov r2, r4		@ AUX register
+	ldr r3, =0x00000000
+	ldr r4, =0x00000000
+	smc 0
+
+	ldmfd	sp!, {r3-r4}
+reenable_done:
+	bx	lr
+#endif
+ENDPROC(__cortex_a9_l2x0_reenable)
+
+
 	.align L1_CACHE_SHIFT
 ENTRY(__shut_off_mmu)
 	mrc	p15, 0, r3, c1, c0, 0
