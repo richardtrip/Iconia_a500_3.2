@@ -1001,6 +1001,7 @@ static void ventana_usb_init(void)
 	unsigned long val;
 
 	tegra_usb_phy_init(tegra_usb_phy_pdata, ARRAY_SIZE(tegra_usb_phy_pdata));
+<<<<<<< HEAD
 	/*enable USB1/USB2 prefetch engine*/
 	val = gizmo_readl(AHB_GIZMO_AHB_MEM);
 	val |= ENB_FAST_REARBITRATE | IMMEDIATE | DONT_SPLIT_AHB_WR;
