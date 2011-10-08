@@ -30,11 +30,12 @@
 
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
 #define DEF_FREQUENCY_UP_THRESHOLD		(75)
-#define DEF_SAMPLING_DOWN_FACTOR    		(30)
-#define MAX_SAMPLING_DOWN_FACTOR    		(95000)
+#define DEF_SAMPLING_DOWN_FACTOR    		(10)
+#define DEF_SAMPLE_RATE				(15000)
+#define MAX_SAMPLING_DOWN_FACTOR    		(9500)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(80)
-#define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(9500)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(95)
+#define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
 
@@ -674,11 +675,12 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			if (latency == 0)
 				latency = 1;
 			/* Bring kernel and HW constraints together */
-			min_sampling_rate = max(min_sampling_rate,
-					MIN_LATENCY_MULTIPLIER * latency);
-			dbs_tuners_ins.sampling_rate =
-				max(min_sampling_rate,
-				    latency * LATENCY_MULTIPLIER);
+			min_sampling_rate = MICRO_FREQUENCY_MIN_SAMPLE_RATE;
+					//max(min_sampling_rate,
+					//MIN_LATENCY_MULTIPLIER * latency);
+			dbs_tuners_ins.sampling_rate = DEF_SAMPLE_RATE;
+			//	max(min_sampling_rate,
+			//	    latency * LATENCY_MULTIPLIER);
 			dbs_tuners_ins.io_is_busy = should_io_be_busy();
 		}
 		mutex_unlock(&dbs_mutex);
@@ -723,7 +725,7 @@ static int __init cpufreq_gov_dbs_init(void)
 
 	idle_time = get_cpu_idle_time_us(cpu, &wall);
 	put_cpu();
-	if (idle_time != -1ULL) {
+//	if (idle_time != -1ULL) {
 		/* Idle micro accounting is supported. Use finer thresholds */
 		dbs_tuners_ins.up_threshold = MICRO_FREQUENCY_UP_THRESHOLD;
 		dbs_tuners_ins.down_differential =
@@ -734,11 +736,11 @@ static int __init cpufreq_gov_dbs_init(void)
 		 * timer might skip some samples if idle/sleeping as needed.
 		*/
 		min_sampling_rate = MICRO_FREQUENCY_MIN_SAMPLE_RATE;
-	} else {
+//	} else {
 		/* For correct statistics, we need 10 ticks for each measure */
-		min_sampling_rate =
-			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(10);
-	}
+//		min_sampling_rate =
+//			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(10);
+//	}
 
 	kondemand_wq = create_workqueue("kondemand");
 	if (!kondemand_wq) {

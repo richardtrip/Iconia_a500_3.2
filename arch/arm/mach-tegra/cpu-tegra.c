@@ -330,20 +330,20 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
         
         if (cpufreq_frequency_table_cpuinfo(policy, freq_table)) {
-#if defined(CONFIG_TEGRA_CPU_FREQ_SET_MIN_MAX)
+//#if defined(CONFIG_TEGRA_CPU_FREQ_SET_MIN_MAX)
             policy->cpuinfo.min_freq = CONFIG_TEGRA_CPU_FREQ_MIN;
             policy->cpuinfo.max_freq = CONFIG_TEGRA_CPU_FREQ_MAX;
-#endif
+//#endif
 }
-#if defined(CONFIG_TEGRA_CPU_FREQ_SET_MIN_MAX)
+//#if defined(CONFIG_TEGRA_CPU_FREQ_SET_MIN_MAX)
            policy->min = CONFIG_TEGRA_CPU_FREQ_MIN;
            policy->max = CONFIG_TEGRA_CPU_FREQ_MAX;
-#endif
+//#endif
 	policy->cur = tegra_getspeed(policy->cpu);
 	target_cpu_speed[policy->cpu] = policy->cur;
 
 	/* FIXME: what's the actual transition time? */
-	policy->cpuinfo.transition_latency = 300 * 1000;
+	policy->cpuinfo.transition_latency = 30 * 1000;
 
 	policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
 	cpumask_copy(policy->related_cpus, cpu_possible_mask);

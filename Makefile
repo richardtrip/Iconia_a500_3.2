@@ -558,24 +558,24 @@ ifndef CONFIG_CC_STACKPROTECTOR
 KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
 endif
 
-ifdef CONFIG_FRAME_POINTER
-KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
-else
+# ifdef CONFIG_FRAME_POINTER
+# KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
+# else
 KBUILD_CFLAGS	+= -fomit-frame-pointer
-endif
+# endif
 
-ifdef CONFIG_DEBUG_INFO
-KBUILD_CFLAGS	+= -g
-KBUILD_AFLAGS	+= -gdwarf-2
-endif
+# ifdef CONFIG_DEBUG_INFO
+# KBUILD_CFLAGS	+= -g
+# KBUILD_AFLAGS	+= -gdwarf-2
+# endif
 
-ifdef CONFIG_DEBUG_INFO_REDUCED
-KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
-endif
+# ifdef CONFIG_DEBUG_INFO_REDUCED
+# KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
+# endif
 
-ifdef CONFIG_FUNCTION_TRACER
-KBUILD_CFLAGS	+= -pg
-endif
+# ifdef CONFIG_FUNCTION_TRACER
+# KBUILD_CFLAGS	+= -pg
+# endif
 
 # We trigger additional mismatches with less inlining
 ifdef CONFIG_DEBUG_SECTION_MISMATCH

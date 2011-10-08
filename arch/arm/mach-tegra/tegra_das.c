@@ -567,7 +567,7 @@ static int tegra_das_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, das_ctx);
 
-	tegra_das_debuginit(das_ctx);
+//	tegra_das_debuginit(das_ctx);
 
 	for (i = 0; i <= tegra_das_port_dap5; i++) {
 		dap_prop = &(das_ctx->pdata->tegra_dap_port_info_table[i]);
