@@ -57,10 +57,6 @@
 #include <asm/mach-types.h>
 #include <asm/hardware/scoop.h>
 
-#ifdef CONFIG_HAS_WAKELOCK
-#include <linux/wakelock.h>
-#endif
-
 #define STATE_INIT	0
 #define STATE_ABORT	1
 #define STATE_EXIT	2
@@ -92,9 +88,11 @@
 #define TEGRA_INT_MIC		0x10
 #define TEGRA_EXT_MIC		0x20
 #define TEGRA_LINEIN		0x40
-#define TEGRA_HEADSET		0x80
+#define TEGRA_HEADSET_OUT	0x80
+#define TEGRA_HEADSET_IN	0x100
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
-#define TEGRA_MIC_MUTE		0x100
+#define TEGRA_MIC_MUTE		0x200
+#define TEGRA_VOIP_RINGTONE	0x400
 #endif
 
 struct tegra_dma_channel;
@@ -110,10 +108,6 @@ struct tegra_runtime_data {
 	int period_index;
 	int dma_state;
 	struct tegra_dma_channel *dma_chan;
-#ifdef CONFIG_HAS_WAKELOCK
-       struct wake_lock wake_lock;
-       char wake_lock_name[32];
-#endif
 };
 
 struct tegra_audio_data {
@@ -128,6 +122,8 @@ struct tegra_audio_data {
 	int codec_con;
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
 	bool isMicMuted;
+	bool isPowerOff;
+	bool isRingtone;
 #endif
 };
 
@@ -150,6 +146,7 @@ int tegra_controls_init(struct snd_soc_codec *codec);
 int tegra_jack_init(struct snd_soc_codec *codec);
 void tegra_jack_exit(void);
 void tegra_jack_resume(void);
+void tegra_jack_suspend(void);
 void tegra_switch_set_state(int state);
 
 void setup_i2s_dma_request(struct snd_pcm_substream *substream,

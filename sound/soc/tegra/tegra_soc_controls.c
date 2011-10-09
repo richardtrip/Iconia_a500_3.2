@@ -35,7 +35,7 @@ static void tegra_audio_route(struct tegra_audio_data* audio_data,
 
 	if (play_device_new != audio_data->play_device) {
 		codec_con &= ~(TEGRA_HEADPHONE | TEGRA_LINEOUT |
-			TEGRA_SPK | TEGRA_EAR_SPK | TEGRA_HEADSET);
+			TEGRA_SPK | TEGRA_EAR_SPK | TEGRA_HEADSET_OUT);
 
 		if (play_device_new & TEGRA_AUDIO_DEVICE_OUT_HEADPHONE)
 			codec_con |= TEGRA_HEADPHONE;
@@ -50,7 +50,7 @@ static void tegra_audio_route(struct tegra_audio_data* audio_data,
 			codec_con |= TEGRA_EAR_SPK;
 
 		if (play_device_new & TEGRA_AUDIO_DEVICE_OUT_HEADSET)
-			codec_con |= TEGRA_HEADSET;
+			codec_con |= TEGRA_HEADSET_OUT;
 
 		tegra_ext_control(audio_data->codec, codec_con);
 		audio_data->play_device = play_device_new;
@@ -58,7 +58,7 @@ static void tegra_audio_route(struct tegra_audio_data* audio_data,
 
 	if (capture_device_new != audio_data->capture_device) {
 		codec_con &= ~(TEGRA_INT_MIC | TEGRA_EXT_MIC |
-			TEGRA_LINEIN | TEGRA_HEADSET);
+			TEGRA_LINEIN | TEGRA_HEADSET_IN);
 
 		if (capture_device_new & (TEGRA_AUDIO_DEVICE_IN_BUILTIN_MIC |
 			TEGRA_AUDIO_DEVICE_IN_BACK_MIC))
@@ -71,7 +71,7 @@ static void tegra_audio_route(struct tegra_audio_data* audio_data,
 			codec_con |= TEGRA_LINEIN;
 
 		if (capture_device_new & TEGRA_AUDIO_DEVICE_IN_HEADSET)
-			codec_con |= TEGRA_HEADSET;
+			codec_con |= TEGRA_HEADSET_IN;
 
 		tegra_ext_control(audio_data->codec, codec_con);
 		audio_data->capture_device = capture_device_new;
@@ -259,6 +259,56 @@ struct snd_kcontrol_new tegra_call_mode_control = {
 };
 
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
+static int tegra_ringtone_mode_info(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int tegra_ringtone_mode_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct tegra_audio_data* audio_data = snd_kcontrol_chip(kcontrol);
+
+	ucontrol->value.integer.value[0] = TEGRA_AUDIO_DEVICE_NONE;
+	if (audio_data) {
+		ucontrol->value.integer.value[0] = audio_data->isRingtone;
+		return 0;
+	}
+	return -EINVAL;
+}
+
+static int tegra_ringtone_mode_put(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct tegra_audio_data* audio_data = snd_kcontrol_chip(kcontrol);
+	int codec_con = audio_data->codec_con;
+	audio_data->isRingtone = ucontrol->value.integer.value[0];
+
+	if (audio_data->isRingtone) {
+		codec_con |= TEGRA_VOIP_RINGTONE;
+	} else {
+		codec_con &= ~TEGRA_VOIP_RINGTONE;
+	}
+
+	tegra_ext_control(audio_data->codec, codec_con);
+	return 1;
+}
+
+struct snd_kcontrol_new tegra_ringtone_mode_control = {
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Ringtone Mode",
+	.private_value = 0xffff,
+	.info = tegra_ringtone_mode_info,
+	.get = tegra_ringtone_mode_get,
+	.put = tegra_ringtone_mode_put
+};
+
 static int tegra_mic_mode_info(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_info *uinfo)
 {
@@ -294,6 +344,37 @@ static int tegra_mic_mode_get(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+static int tegra_shutdown_mode_info(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int tegra_shutdown_mode_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct tegra_audio_data* audio_data = snd_kcontrol_chip(kcontrol);
+	struct snd_soc_device *socdev = audio_data->codec->socdev;
+	audio_data->isPowerOff = ucontrol->value.integer.value[0];
+
+	if (audio_data->isPowerOff) {
+		snd_soc_dapm_shutdown(socdev);
+	}
+	return 1;
+}
+
+static int tegra_shutdown_mode_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct tegra_audio_data* audio_data = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = audio_data->isPowerOff;
+	return 1;
+}
+
 struct snd_kcontrol_new tegra_mic_mode_control = {
 	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
@@ -302,6 +383,16 @@ struct snd_kcontrol_new tegra_mic_mode_control = {
 	.info = tegra_mic_mode_info,
 	.get = tegra_mic_mode_get,
 	.put = tegra_mic_mode_put
+};
+
+struct snd_kcontrol_new tegra_shutdown_mode_control = {
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "CODEC Power Shutdown",
+	.private_value = 0xffff,
+	.info = tegra_shutdown_mode_info,
+	.get = tegra_shutdown_mode_get,
+	.put = tegra_shutdown_mode_put
 };
 #endif
 
@@ -334,6 +425,18 @@ int tegra_controls_init(struct snd_soc_codec *codec)
 		snd_ctl_new1(&tegra_mic_mode_control, audio_data));
 	if (err < 0)
 		return err;
+
+	/* Add shutdown mode switch control */
+	err = snd_ctl_add(codec->card,
+		snd_ctl_new1(&tegra_shutdown_mode_control, audio_data));
+	if (err < 0)
+		return err;
+
+	/* Add ringtone mode switch control */
+        err = snd_ctl_add(codec->card,
+                snd_ctl_new1(&tegra_ringtone_mode_control, audio_data));
+        if (err < 0)
+                return err;
 #endif
 
 	return 0;
