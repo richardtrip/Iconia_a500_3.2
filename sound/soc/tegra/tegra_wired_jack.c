@@ -141,20 +141,9 @@ static int wired_jack_detect(void)
 		return 2;
 }
 
-void select_mic_input(int state)
+static void select_mic_input(int state)
 {
 	int CtrlReg = 0;
-	struct wm8903_priv *wm8903_config = (struct wm8903_priv *)snd_soc_codec_get_drvdata(g_codec);
-
-	if (wm8903_config->fm2018_status == 1) {
-		CtrlReg |= WM8903_MICDET_ENA | WM8903_MICBIAS_ENA;
-		snd_soc_write(g_codec, WM8903_MIC_BIAS_CONTROL_0, CtrlReg);
-		ACER_DBG("Enable mic bias !!\n");
-	} else if (wm8903_config->fm2018_status == 0) {
-		CtrlReg &= ~(WM8903_MICDET_ENA | WM8903_MICBIAS_ENA);
-		snd_soc_write(g_codec, WM8903_MIC_BIAS_CONTROL_0, CtrlReg);
-		ACER_DBG("Disable mic bias !!\n");
-	}
 
 	switch (state) {
 		case 0:
@@ -224,11 +213,7 @@ static enum headset_state get_headset_state(void)
 
 	switch (flag) {
 	case NO_DEVICE:
-#if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
-		select_mic_input(2);
-#endif
 		state = BIT_NO_HEADSET;
-		ACER_DBG("NO_DEVICE !\n");
 		break;
 	case HEADSET_WITH_MIC:
 		state = BIT_HEADSET;
@@ -249,10 +234,6 @@ static enum headset_state get_headset_state(void)
 		break;
 	default:
 		state = BIT_NO_HEADSET;
-#if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
-		select_mic_input(2);
-#endif
-		ACER_DBG("Default NO_DEVICE !\n");
 	}
 #if defined(CONFIG_MACH_ACER_PICASSO) || defined(CONFIG_MACH_ACER_MAYA) || defined(CONFIG_MACH_ACER_VANGOGH)
 	g_mic_state = state;
@@ -271,16 +252,7 @@ static int wired_switch_notify(struct notifier_block *self,
 
 void tegra_jack_resume(void)
 {
-	snd_soc_jack_add_gpios(tegra_wired_jack,
-				ARRAY_SIZE(wired_jack_gpios),
-				wired_jack_gpios);
-}
-
-void tegra_jack_suspend(void)
-{
-	snd_soc_jack_free_gpios(tegra_wired_jack,
-				ARRAY_SIZE(wired_jack_gpios),
-				wired_jack_gpios);
+	tegra_switch_set_state(get_headset_state());
 }
 
 static struct notifier_block wired_switch_nb = {
